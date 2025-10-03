@@ -21,8 +21,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
+import { Eye, EyeOff } from "lucide-react"; // 👈 for toggle icons
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Enter a valid email" }),
@@ -33,6 +33,7 @@ type LoginSchema = z.infer<typeof loginSchema>;
 
 const LoginForm = () => {
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👈 state for toggle
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
@@ -47,11 +48,11 @@ const LoginForm = () => {
     const res = await signIn("credentials", {
       email: data.email,
       password: data.password,
-      redirect: true, 
+      redirect: true,
       callbackUrl: '/dashboard'
     });
 
-    console.log("res",res);
+    console.log("res", res);
     setLoading(false);
 
     if (res?.error) {
@@ -73,6 +74,7 @@ const LoginForm = () => {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/* Email field */}
               <FormField
                 control={form.control}
                 name="email"
@@ -92,6 +94,7 @@ const LoginForm = () => {
                 )}
               />
 
+              {/* Password field with show/hide toggle */}
               <FormField
                 control={form.control}
                 name="password"
@@ -99,31 +102,38 @@ const LoginForm = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="********"
-                        className="text-xs"
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"} // 👈 toggle type
+                          placeholder="********"
+                          className="text-xs pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          tabIndex={-1}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
           </Form>
         </CardContent>
-        {/* <CardFooter className="text-sm text-gray-500 justify-center">
-          Don’t have an account? <span className="ml-1 text-blue-600 cursor-pointer">Sign up</span>
-        </CardFooter> */}
       </Card>
     </div>
   );
