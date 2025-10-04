@@ -6,6 +6,7 @@ import { ReactNode, useEffect } from 'react';
 import Navbar from '@/components/custom/Navbar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import DashboardSideBar from '@/components/custom/sidebar/SideBar';
+import DashboardSkeleton from '@/components/custom/skeleton/main-dashboard-skeleton';
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
@@ -17,7 +18,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return;
   };
 
-  if (status === 'loading') return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  if (status === 'loading') return <DashboardSkeleton/>
 
   return (
     <>

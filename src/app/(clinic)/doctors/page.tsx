@@ -5,7 +5,7 @@ import { isTokenExpired } from '@/lib/checkToken';
 import { Suspense } from 'react';
 import DoctorClient from '@/components/custom/doctors/doctor-client';
 import { getDoctors } from '@/app/actions/doctors/doctors.actions';
-import CustomSkeleton from '@/components/custom/custom-skeleton';
+import CustomSkeleton from '@/components/custom/skeleton/custom-skeleton';
 
 const page = async () => {
     const session = await getServerSession(authOptions);

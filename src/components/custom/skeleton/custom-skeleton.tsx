@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '../../ui/skeleton';
 
 interface CustomSkeletonProps {
   rowCount?: number; // Optional: Number of skeleton rows (default: 5)
