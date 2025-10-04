@@ -164,7 +164,7 @@ export default function DoctorClient({ initialDoctors }: Props) {
         <div className='flex flex-col gap-1'>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className='text-xs size-8' size={'sm'} onClick={() => setEditingDoctor(null)}>
+              <Button className='text-xs' size={'sm'} onClick={() => setEditingDoctor(null)}>
                 <Plus className="text-xs" /> Add Doctor
               </Button>
             </DialogTrigger>
