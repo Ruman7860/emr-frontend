@@ -5,6 +5,7 @@ import { isTokenExpired } from '@/lib/checkToken';
 import { Suspense } from 'react';
 import DoctorClient from '@/components/custom/doctors/doctor-client';
 import { getDoctors } from '@/app/actions/doctors/doctors.actions';
+import CustomSkeleton from '@/components/custom/custom-skeleton';
 
 const page = async () => {
     const session = await getServerSession(authOptions);
@@ -24,8 +25,9 @@ const page = async () => {
         isActive: doc.isActive,
         deletedAt:doc.deletedAt
     }));
+    
     return (
-        <Suspense fallback={<p>Loading doctors...</p>}>
+        <Suspense fallback={<CustomSkeleton/>}>
             <DoctorClient initialDoctors={initialDoctors} />
         </Suspense>
     )
