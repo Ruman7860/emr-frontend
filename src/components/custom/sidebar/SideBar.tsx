@@ -24,6 +24,7 @@ export default function DashboardSideBar() {
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/doctors', label: 'Doctors', roles: ['ADMIN'] },
     { href: '/patients', label: 'Patients', roles: ['ADMIN', 'DOCTOR'] },
     { href: '/inventory', label: 'Inventory', roles: ['ADMIN'] },
   ];
@@ -49,15 +50,15 @@ export default function DashboardSideBar() {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     className={cn(
-                      'rounded-md p-2 hover:bg-gray-200 dark:hover:bg-gray-800',
+                      'rounded-md p-2 gap-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800',
                       pathname === item.href
-                        ? 'bg-green-600 text-white dark:bg-green-500'
+                        ? 'bg-green-600 text-white dark:bg-green-900'
                         : 'text-gray-700 dark:text-gray-200'
                     )}
                     isActive={pathname === item.href}
                     onClick={() => router.push(item.href)}
                   >
-                      {item.label}
+                    {item.label}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );

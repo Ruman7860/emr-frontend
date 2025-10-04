@@ -2,10 +2,10 @@
 
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { User } from "next-auth";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
 interface DashboardProps {
   user: User;
@@ -20,13 +20,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       <Card className="bg-white dark:bg-gray-800 shadow-lg rounded-xl">
         <CardHeader className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* <Avatar>
-              {user.image ? (
-                <AvatarImage src={user.image} alt={user.name || "User"} />
-              ) : (
-                <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
-              )}
-            </Avatar> */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 Welcome back, {user.name || "User"}!
@@ -35,6 +28,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 Here's your dashboard overview
               </p>
             </div>
+          </div>
+          <div className="justify-end">
+            <Badge>
+              {user?.role}
+            </Badge>
           </div>
         </CardHeader>
       </Card>
@@ -106,8 +104,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col md:flex-row gap-4">
-          <Button 
-            size={'sm'} 
+          <Button
+            size={'sm'}
             className="text-xs"
             onClick={() => router.push('/patients')}
           >
