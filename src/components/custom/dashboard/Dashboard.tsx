@@ -25,7 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 Welcome back, {user.name || "User"}!
               </h2>
               <p className="text-gray-500 dark:text-gray-400">
-                Here's your dashboard overview
+                Here&apos;s your dashboard overview
               </p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 import { redirect } from 'next/navigation';
 import { isTokenExpired } from '@/lib/checkToken';
 import { Suspense } from 'react';
@@ -9,7 +9,7 @@ import { getStaffs } from '@/app/actions/staffs/staffs.actions';
 
 const page = async () => {
   const session = await getServerSession(authOptions);
-  if (isTokenExpired(session.accessToken)) {
+  if (!session?.accessToken || isTokenExpired(session.accessToken)) {
     redirect("/login");
   }
   if (!session) redirect('/login');

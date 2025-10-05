@@ -30,10 +30,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Eye, Pencil, Trash2, Plus, Power, Stethoscope } from 'lucide-react';
-import StaffForm from './staff-form';
+import StaffForm, { createStaffSchema, updateStaffSchema } from './staff-form';
 import { Badge } from '@/components/ui/badge';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { EmptyState } from '../empty-state';
+import z from 'zod';
 
 type Staff = {
   id: string;
@@ -42,12 +43,16 @@ type Staff = {
   phone: string;
   employeeCode: string;
   isActive: boolean;
-  deletedAt: any;
+  deletedAt: Date | null;
 };
 
 type Props = {
   initialStaffs: Staff[];
 };
+
+type CreateStaffFormValues = z.infer<typeof createStaffSchema>;
+type UpdateStaffFormValues = z.infer<typeof updateStaffSchema>;
+type StaffFormValues = CreateStaffFormValues | UpdateStaffFormValues;
 
 export default function StaffClient({ initialStaffs }: Props) {
   const [staffs, setStaffs] = useState<Staff[]>(initialStaffs);
@@ -67,7 +72,7 @@ export default function StaffClient({ initialStaffs }: Props) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent, values: any) => {
+  const handleSubmit = async (e: React.FormEvent, values: StaffFormValues) => {
     e.preventDefault();
     startTransition(async () => {
       try {

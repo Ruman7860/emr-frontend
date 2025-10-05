@@ -63,7 +63,7 @@ type Staff = {
     phone: string;
     employeeCode: string;
     isActive: boolean;
-    deletedAt?: any;
+    deletedAt?: Date | null;
 };
 
 type StaffFormProps = {

@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 import { redirect } from 'next/navigation';
 import { isTokenExpired } from '@/lib/checkToken';
 import { Suspense } from 'react';
@@ -9,25 +9,27 @@ import CustomSkeleton from '@/components/custom/skeleton/custom-skeleton';
 
 const page = async () => {
     const session = await getServerSession(authOptions);
-    if (isTokenExpired(session.accessToken)) {
+    
+    if (!session) redirect('/login');
+
+    if (!session?.accessToken || isTokenExpired(session.accessToken)) {
         redirect("/login");
     }
-    if (!session) redirect('/login');
 
     const allDoctors = await getDoctors();
     const initialDoctors = allDoctors.data.map((doc: any) => ({
         id: doc.id,
         name: doc.user.name,
-        email:doc.user.email,
+        email: doc.user.email,
         specialty: doc.specialty,
         phone: doc.phone,
         employeeCode: doc.employeeCode,
         isActive: doc.isActive,
-        deletedAt:doc.deletedAt
+        deletedAt: doc.deletedAt
     }));
-    
+
     return (
-        <Suspense fallback={<CustomSkeleton/>}>
+        <Suspense fallback={<CustomSkeleton />}>
             <DoctorClient initialDoctors={initialDoctors} />
         </Suspense>
     )
