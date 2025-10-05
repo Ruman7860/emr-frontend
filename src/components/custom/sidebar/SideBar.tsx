@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import {
@@ -25,6 +24,7 @@ export default function DashboardSideBar() {
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/doctors', label: 'Doctors', roles: ['ADMIN'] },
+    { href: '/staffs', label: 'Staffs', roles: ['ADMIN'] },
     { href: '/patients', label: 'Patients', roles: ['ADMIN', 'DOCTOR'] },
     { href: '/inventory', label: 'Inventory', roles: ['ADMIN'] },
   ];
