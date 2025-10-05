@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import {
   Sidebar,
   SidebarContent,
@@ -25,8 +25,8 @@ export default function DashboardSideBar() {
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/doctors', label: 'Doctors', roles: ['ADMIN'] },
     { href: '/staffs', label: 'Staffs', roles: ['ADMIN'] },
-    { href: '/patients', label: 'Patients', roles: ['ADMIN', 'DOCTOR'] },
-    { href: '/inventory', label: 'Inventory', roles: ['ADMIN'] },
+    // { href: '/patients', label: 'Patients', roles: ['ADMIN', 'DOCTOR'] },
+    // { href: '/inventory', label: 'Inventory', roles: ['ADMIN'] },
   ];
 
   return (
@@ -44,6 +44,7 @@ export default function DashboardSideBar() {
         <SidebarGroup>
           <SidebarMenu>
             {menuItems.map((item) => {
+              if (!session?.user?.role) return null;
               if (item.roles && !item.roles.includes(session?.user?.role)) return null;
 
               return (
