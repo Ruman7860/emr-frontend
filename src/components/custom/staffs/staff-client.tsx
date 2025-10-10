@@ -32,8 +32,12 @@ import {
 import { MoreHorizontal, Eye, Pencil, Trash2, Plus, Power, Stethoscope } from 'lucide-react';
 import StaffForm, { createStaffSchema, updateStaffSchema } from './staff-form';
 import { Badge } from '@/components/ui/badge';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { EmptyState } from '../empty-state';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import z from 'zod';
 
 type Staff = {
@@ -60,6 +64,7 @@ export default function StaffClient({ initialStaffs }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [showRemoved, setShowRemoved] = useState(false);
+  const [currentTab, setCurrentTab] = useState('active');
   const [formData, setFormData] = useState({
     email: '',
     name: '',
@@ -67,6 +72,9 @@ export default function StaffClient({ initialStaffs }: Props) {
     employeeCode: '',
   });
   const router = useRouter();
+
+  const activeCount = staffs.filter((s) => s.deletedAt === null).length;
+  const removedCount = staffs.filter((s) => s.deletedAt !== null).length;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -162,7 +170,7 @@ export default function StaffClient({ initialStaffs }: Props) {
             Total {showRemoved ? 'Removed' : 'Active'} Staff: {filteredStaffs.length}
           </Badge>
         </div>
-        <div className='flex flex-col gap-1'>
+        <div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className='text-xs' size={'sm'} onClick={() => setEditingStaff(null)}>
@@ -187,32 +195,21 @@ export default function StaffClient({ initialStaffs }: Props) {
               />
             </DialogContent>
           </Dialog>
-          <ButtonGroup>
-            <Button
-              onClick={() => setShowRemoved(false)}
-              className={`text-xs cursor-pointer transition-colors ${!showRemoved
-                ? 'bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-800 dark:hover:bg-teal-400'
-                : 'bg-transparent text-teal-900 hover:bg-teal-100 dark:text-teal-300 dark:hover:bg-teal-800'
-                }`}
-              size="sm"
-              variant={'outline'}
-            >
-              All Active Staff
-            </Button>
-            <Button
-              onClick={() => setShowRemoved(true)}
-              className={`text-xs cursor-pointer transition-colors ${showRemoved
-                ? 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-400'
-                : 'bg-transparent text-red-700 hover:bg-red-100 dark:text-red-300 dark:hover:bg-red-800'
-                }`}
-              size="sm"
-              variant={'outline'}
-            >
-              Removed Staff
-            </Button>
-          </ButtonGroup>
         </div>
       </div>
+      <Tabs
+        value={currentTab}
+        onValueChange={(value) => {
+          setCurrentTab(value);
+          setShowRemoved(value === 'removed');
+        }}
+        className="w-full mb-4"
+      >
+        <TabsList className="grid w-full grid-cols-2 bg-transparent border ">
+          <TabsTrigger value="active">All Active Staff ({activeCount})</TabsTrigger>
+          <TabsTrigger value="removed">Removed Staff ({removedCount})</TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="rounded-lg border text-card-foreground shadow-md">
         <Table>
           <TableHeader>

@@ -29,16 +29,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, Pencil, Trash2, Plus, Power, Stethoscope } from 'lucide-react';
+import { MoreHorizontal, Eye, Pencil, Trash, Plus, Power, Stethoscope, Trash2 } from 'lucide-react';
 import DoctorForm from './doctor-form';
 import { Badge } from '@/components/ui/badge';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { EmptyState } from '../empty-state';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 
 type Doctor = {
   id: string;
   name: string;
-  email:string;
+  email: string;
   specialty: string;
   phone: string;
   employeeCode: string;
@@ -56,14 +60,18 @@ export default function DoctorClient({ initialDoctors }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [showRemoved, setShowRemoved] = useState(false);
+  const [currentTab, setCurrentTab] = useState('active');
   const [formData, setFormData] = useState({
-    email:'',
+    email: '',
     name: '',
     specialty: '',
     phone: '',
     employeeCode: '',
   });
   const router = useRouter();
+
+  const activeCount = doctors.filter((d) => d.deletedAt === null).length;
+  const removedCount = doctors.filter((d) => d.deletedAt !== null).length;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -75,7 +83,7 @@ export default function DoctorClient({ initialDoctors }: Props) {
       try {
         const newDoctorData = { ...values, isActive: true };
         if (editingDoctor) {
-          const res = await updateDoctor(editingDoctor.id, newDoctorData,true);
+          const res = await updateDoctor(editingDoctor.id, newDoctorData, true);
           setDoctors(doctors.map((doc) =>
             doc.id === editingDoctor.id ? { ...doc, ...newDoctorData } : doc
           ));
@@ -88,7 +96,7 @@ export default function DoctorClient({ initialDoctors }: Props) {
           toast.success('Doctor created successfully');
         }
         setIsDialogOpen(false);
-        setFormData({ email:'',name: '', specialty: '', phone: '', employeeCode: '' });
+        setFormData({ email: '', name: '', specialty: '', phone: '', employeeCode: '' });
         setEditingDoctor(null);
         router.refresh();
       } catch (error) {
@@ -101,7 +109,7 @@ export default function DoctorClient({ initialDoctors }: Props) {
   const handleEdit = (doctor: Doctor) => {
     setEditingDoctor(doctor);
     setFormData({
-      email:doctor.email,
+      email: doctor.email,
       name: doctor.name,
       specialty: doctor.specialty,
       phone: doctor.phone,
@@ -114,7 +122,7 @@ export default function DoctorClient({ initialDoctors }: Props) {
     startTransition(async () => {
       try {
         setDoctors(doctors.map(doc =>
-          doc.id === id ? { ...doc, deletedAt: new Date(), isActive:false } : doc
+          doc.id === id ? { ...doc, deletedAt: new Date(), isActive: false } : doc
         ));
 
         await deleteDoctor(id);
@@ -161,7 +169,7 @@ export default function DoctorClient({ initialDoctors }: Props) {
             Total {showRemoved ? 'Removed' : 'Active'} Doctors: {filteredDoctors.length}
           </Badge>
         </div>
-        <div className='flex flex-col gap-1'>
+        <div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className='text-xs' size={'sm'} onClick={() => setEditingDoctor(null)}>
@@ -186,34 +194,21 @@ export default function DoctorClient({ initialDoctors }: Props) {
               />
             </DialogContent>
           </Dialog>
-          <ButtonGroup>
-            <Button
-              onClick={() => setShowRemoved(false)}
-              className={`text-xs cursor-pointer transition-colors ${!showRemoved
-                ? 'bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-800 dark:hover:bg-teal-400'
-                : 'bg-transparent text-teal-900 hover:bg-teal-100 dark:text-teal-300 dark:hover:bg-teal-800'
-                }`}
-              size="sm"
-              variant={'outline'}
-            >
-              All Active Doctors
-            </Button>
-
-            <Button
-              onClick={() => setShowRemoved(true)}
-              className={`text-xs cursor-pointer transition-colors ${showRemoved
-                ? 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-400'
-                : 'bg-transparent text-red-700 hover:bg-red-100 dark:text-red-300 dark:hover:bg-red-800'
-                }`}
-              size="sm"
-              variant={'outline'}
-            >
-              Removed Doctors
-            </Button>
-          </ButtonGroup>
-
         </div>
       </div>
+      <Tabs
+        value={currentTab}
+        onValueChange={(value) => {
+          setCurrentTab(value);
+          setShowRemoved(value === 'removed');
+        }}
+        className="w-full mb-4"
+      >
+        <TabsList className="grid border bg-transparent w-full grid-cols-2">
+          <TabsTrigger value="active">All Active Doctors ({activeCount})</TabsTrigger>
+          <TabsTrigger value="removed">Removed Doctors ({removedCount})</TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="rounded-lg border text-card-foreground shadow-md">
         <Table>
           <TableHeader>
