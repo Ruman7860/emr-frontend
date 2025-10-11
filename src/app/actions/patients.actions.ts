@@ -56,7 +56,7 @@ function validateId(id: string) {
     }
 }
 
-export async function getPatients(page: number = 1, limit: number = 10, search?: string, deleted?: boolean,) {
+async function getPatients(page: number = 1, limit: number = 10, search?: string, deleted?: boolean,) {
     try {
         const { headers } = await getSessionAndHeaders();
         const queryParams = new URLSearchParams({
@@ -78,7 +78,27 @@ export async function getPatients(page: number = 1, limit: number = 10, search?:
     }
 }
 
-export async function createPatient(data: any) {
+async function getPatientById(id: string) {
+    try {
+        validateId(id);
+        const { headers } = await getSessionAndHeaders();
+        const res = await fetch(`${API_BASE}/patients/${id}`, {
+            headers,
+            cache: 'no-store',
+        });
+
+        if (!res.ok) {
+            throw new Error(`Failed to fetch patient: ${res.status} ${res.statusText}`);
+        }
+
+        const patientData = await res.json();
+        return patientData;
+    } catch (error) {
+        throw new Error(`Error fetching patient: ${error}`);
+    }
+}
+
+async function createPatient(data: any) {
     try {
         validatePatientData(data);
         const { headers } = await getSessionAndHeaders();
@@ -98,7 +118,7 @@ export async function createPatient(data: any) {
     }
 }
 
-export async function updatePatient(id: string, data: any, isEditing: boolean) {
+async function updatePatient(id: string, data: any, isEditing: boolean) {
     try {
         validateId(id);
         validatePatientData(data, isEditing);
@@ -119,7 +139,7 @@ export async function updatePatient(id: string, data: any, isEditing: boolean) {
     }
 }
 
-export async function deletePatient(id: string) {
+async function deletePatient(id: string) {
     try {
         validateId(id);
         const { headers } = await getSessionAndHeaders();
@@ -141,7 +161,7 @@ export async function deletePatient(id: string) {
     }
 }
 
-export async function restorePatient(id: string) {
+async function restorePatient(id: string) {
     try {
         validateId(id);
         const { headers } = await getSessionAndHeaders();
@@ -160,4 +180,14 @@ export async function restorePatient(id: string) {
     } catch (error) {
         throw new Error(`Error restoring patient: ${error}`);
     }
+}
+
+export {
+    getPatients,
+    getPatientById,
+    createPatient,
+    updatePatient,
+    deletePatient,
+    restorePatient
+
 }
