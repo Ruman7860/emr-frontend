@@ -164,7 +164,7 @@ export default function StaffClient({ initialStaffs }: Props) {
           <h1
             className="text-3xl text-teal-900 dark:text-zinc-300 font-bold tracking-tight"
           >
-            Staff
+            Staffs
           </h1>
           <Badge>
             Total {showRemoved ? 'Removed' : 'Active'} Staff: {filteredStaffs.length}
@@ -206,8 +206,8 @@ export default function StaffClient({ initialStaffs }: Props) {
         className="w-full mb-4"
       >
         <TabsList className="grid w-full grid-cols-2 bg-transparent border ">
-          <TabsTrigger value="active">All Active Staff ({activeCount})</TabsTrigger>
-          <TabsTrigger value="removed">Removed Staff ({removedCount})</TabsTrigger>
+          <TabsTrigger value="active">All Active Staffs ({activeCount})</TabsTrigger>
+          <TabsTrigger value="removed">Removed Staffs ({removedCount})</TabsTrigger>
         </TabsList>
       </Tabs>
       <div className="rounded-lg border text-card-foreground shadow-md">

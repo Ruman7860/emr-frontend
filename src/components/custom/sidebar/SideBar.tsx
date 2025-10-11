@@ -25,7 +25,7 @@ export default function DashboardSideBar() {
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/doctors', label: 'Doctors', roles: ['ADMIN'] },
     { href: '/staffs', label: 'Staffs', roles: ['ADMIN'] },
-    // { href: '/patients', label: 'Patients', roles: ['ADMIN', 'DOCTOR'] },
+    { href: '/patients', label: 'Patients', roles: ['ADMIN', 'DOCTOR','STAFF'] },
     // { href: '/inventory', label: 'Inventory', roles: ['ADMIN'] },
   ];
 
