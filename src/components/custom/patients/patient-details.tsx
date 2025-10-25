@@ -99,7 +99,7 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
                         variant="outline"
                         size="sm"
                         className="text-xs cursor-pointer"
-                        onClick={() => { router.push(`/patients/${patientDetails.id}/visits`) }}
+                        onClick={() => { router.push(`/patients/${patientDetails.id}/timeline`) }}
                     >
                         Patient History
                     </Button>

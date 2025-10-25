@@ -98,6 +98,24 @@ async function getPatientById(id: string) {
     }
 }
 
+async function getTimelinePatientData(id:string) {
+    try {
+        validateId(id);
+        const { headers } = await getSessionAndHeaders();
+         const res = await fetch(`${API_BASE}/patients/${id}/timeline`, {
+            headers,
+            cache: 'no-store',
+        });
+        if (!res.ok) {
+            throw new Error(`Failed to fetch patient: ${res.status} ${res.statusText}`);
+        }
+        const patientData = await res.json();
+        return patientData;
+    } catch (error) {
+        throw new Error(`Error fetching patient: ${error}`);
+    }
+}
+
 async function createPatient(data: any) {
     try {
         validatePatientData(data);
@@ -185,9 +203,9 @@ async function restorePatient(id: string) {
 export {
     getPatients,
     getPatientById,
+    getTimelinePatientData,
     createPatient,
     updatePatient,
     deletePatient,
     restorePatient
-
 }
