@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, User, Phone, MapPin, Stethoscope, DollarSign, FileText, Pencil, Circle, Activity, Slash, Clock, CreditCard, Info } from "lucide-react";
+import { Calendar, User, Phone, MapPin, Stethoscope, DollarSign, FileText, Pencil, Activity, Slash, Clock, CreditCard, Info } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";

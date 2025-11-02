@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, Pencil, Trash, Plus, Power, Stethoscope, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Eye, Pencil, Plus, Power, Stethoscope, Trash2 } from 'lucide-react';
 import DoctorForm from './doctor-form';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '../empty-state';

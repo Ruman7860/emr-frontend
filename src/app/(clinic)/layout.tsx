@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 import Navbar from '@/components/custom/Navbar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import DashboardSideBar from '@/components/custom/sidebar/SideBar';

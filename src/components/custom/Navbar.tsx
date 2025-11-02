@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -12,7 +11,6 @@ import { useTheme } from 'next-themes';
 
 export default function Navbar() {
   const { state, isMobile, toggleSidebar } = useSidebar();
-  const theme = useTheme()
 
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 shadow-md border-b-2">
