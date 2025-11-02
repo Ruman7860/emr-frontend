@@ -4,318 +4,408 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 
-// ---------------- Zod Schemas ----------------
 
-// Schema for creating a patient (required fields)
 export const createPatientSchema = z.object({
-    fullName: z.string().min(1, { message: 'Full name is required' }),
-    dateOfBirth: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: 'Invalid date of birth',
+  fullName: z.string().min(1, { message: 'Full name is required' }),
+  dateOfBirth: z
+    .string()
+    .optional()
+    .refine((v) => !v || !isNaN(Date.parse(v)), {
+      message: 'Invalid date of birth',
     }),
-    gender: z.string().min(1, { message: 'Gender is required' }),
-    address: z.string().optional(),
-    phone: z
-        .string()
-        .optional()
-        .refine((val) => !val || /^\d{10,15}$/.test(val), {
-            message: 'Invalid phone number format',
-        }),
-    registrationFee: z.number().min(1, { message: 'Registration fee must be positive' }),
-    doctorId: z.string().optional(),
-    isActive:z.boolean()
+  age: z.number().int().min(0, { message: 'Age must be ≥ 0' }),
+  gender: z.enum(['MALE', 'FEMALE'], { message: 'Gender is required' }),
+  chiefComplaint: z
+    .string()
+    .min(1, { message: 'Symptoms / reason is required' }),
+  registrationFee: z
+    .number()
+    .min(1, { message: 'Fee must be positive' }),
+  address: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d{10,15}$/.test(v), {
+      message: 'Phone must be 10-15 digits',
+    }),
+  doctorId: z.string().optional(),
 });
 
-// Schema for updating a patient (optional fields)
-export const updatePatientSchema = z.object({
-    fullName: z.string().min(1, { message: 'Full name is required' }),
-    dateOfBirth: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: 'Invalid date of birth',
-    }).optional(),
-    gender: z.string().min(1, { message: 'Gender is required' }).optional(),
-    address: z.string().optional(),
-    phone: z
-        .string()
-        .optional()
-        .refine((val) => !val || /^\d{10,15}$/.test(val), {
-            message: 'Invalid phone number format',
-        }),
-    registrationFee: z.number().min(1, { message: 'Registration fee must be positive' }).optional(),
-    doctorId: z.string().optional(),
-});
-
-// ---------------- TypeScript Types ----------------
 type CreatePatientFormValues = z.infer<typeof createPatientSchema>;
-type UpdatePatientFormValues = z.infer<typeof updatePatientSchema>;
-type PatientFormValues = CreatePatientFormValues | UpdatePatientFormValues;
-
-type Patient = {
-    id?: string;
-    fullName: string;
-    dateOfBirth: string;
-    gender: string;
-    address: string | null;
-    phone: string | null;
-    registrationFee: number;
-    doctorId: string | null;
-    isActive: boolean;
-};
 
 type PatientFormProps = {
-    editingPatient: Patient | null;
-    formData: {
-        fullName: string;
-        dateOfBirth: string;
-        gender: string;
-        address: string;
-        phone: string;
-        registrationFee: string;
-        doctorId: string;
-    };
-    isPending: boolean;
-    onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onSubmit: (e: React.FormEvent, values: PatientFormValues) => void;
+  formData: {
+    fullName: string;
+    dateOfBirth: string;
+    age: number | null;
+    gender: string;
+    address: string;
+    phone: string;
+    chiefComplaint: string;
+    registrationFee: string;
+    doctorId: string;
+  };
+  initialDoctorData: {
+    id: string;
+    fullName: string;
+  }[];
+  isPending: boolean;
+  onInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
+  onSubmit: (e: React.FormEvent, values: CreatePatientFormValues) => void;
 };
 
-// ---------------- Patient Form Component ----------------
-function PatientForm({ editingPatient, formData, isPending, onInputChange, onSubmit }: PatientFormProps) {
-    const isEditing = !!editingPatient;
 
-    const form = useForm<PatientFormValues>({
-        resolver: zodResolver(isEditing ? updatePatientSchema : createPatientSchema),
-        defaultValues: {
-            fullName: formData.fullName,
-            dateOfBirth: formData.dateOfBirth,
-            gender: formData.gender,
-            address: formData.address,
-            phone: formData.phone,
-            registrationFee: Number(formData.registrationFee),
-            doctorId: formData.doctorId,
-            isActive: editingPatient ? editingPatient.isActive : true,
-        },
-    });
+export default function PatientForm({
+  formData,
+  isPending,
+  onInputChange,
+  onSubmit,
+  initialDoctorData
+}: PatientFormProps) {
+  const form = useForm<CreatePatientFormValues>({
+    resolver: zodResolver(createPatientSchema),
+    defaultValues: {
+      fullName: formData.fullName,
+      dateOfBirth: formData.dateOfBirth,
+      age: formData.age ? Number(formData.age) : 0,
+      gender: formData.gender as 'MALE' | 'FEMALE' | undefined,
+      address: formData.address,
+      phone: formData.phone,
+      chiefComplaint: formData.chiefComplaint,
+      registrationFee: formData.registrationFee
+        ? Number(formData.registrationFee)
+        : 0,
+      doctorId: formData.doctorId,
+    },
+  });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const isValid = await form.trigger();
-        if (isValid) {
-            const values = form.getValues();
-            values.registrationFee = Number(values.registrationFee); // Ensure number
-            onSubmit(e, values);
-        }
-    };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const valid = await form.trigger();
+    if (!valid) return;
 
-    return (
-        <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-                <DialogTitle>{isEditing ? 'Edit Patient' : 'Add Patient'}</DialogTitle>
-                <DialogDescription>
-                    {isEditing
-                        ? 'Update the patient information below.'
-                        : 'Enter details for the new patient.'}
-                </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="fullName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Full Name <span className="text-red-500">*</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="John Doe"
-                                            {...field}
-                                            value={formData.fullName}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                onInputChange(e);
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="dateOfBirth"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Date of Birth <span className="text-red-500">*</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="date"
-                                            {...field}
-                                            value={formData.dateOfBirth}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                onInputChange(e);
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="gender"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Gender <span className="text-red-500">*</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="MALE/FEMALE"
-                                            {...field}
-                                            value={formData.gender}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                onInputChange(e);
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Phone <span className="text-gray-400 text-xs">(optional)</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="+91 9876543210"
-                                            {...field}
-                                            value={formData.phone}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                onInputChange(e);
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="address"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Address <span className="text-gray-400 text-xs">(optional)</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="123 Main Street"
-                                            {...field}
-                                            value={formData.address}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                onInputChange(e);
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="registrationFee"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Registration Fee <span className="text-red-500">*</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="number"
-                                            placeholder="500"
-                                            {...field}
-                                            value={formData.registrationFee}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                onInputChange(e);
-                                            }}
-                                            disabled={isEditing}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="doctorId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Doctor <span className="text-gray-400 text-xs">(optional)</span>
-                                    </FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="Doctor ID"
-                                            {...field}
-                                            value={formData.doctorId}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                onInputChange(e);
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="flex justify-end pt-2">
-                        <Button
-                            type="submit"
-                            disabled={isPending}
-                            className="w-full md:w-auto"
-                        >
-                            {isPending ? 'Processing...' : isEditing ? 'Update Patient' : 'Create Patient'}
-                        </Button>
-                    </div>
-                </form>
-            </Form>
-        </DialogContent>
-    );
+    const values = form.getValues();
+    values.age = Number(values.age);
+    values.registrationFee = Number(values.registrationFee);
+    onSubmit(e, values);
+  };
+
+  return (
+    <>
+      <SheetHeader className="h-20">
+        <SheetTitle>Add Patient</SheetTitle>
+        <SheetDescription>
+          Enter details for the new patient.
+        </SheetDescription>
+      </SheetHeader>
+      <Separator />
+
+      <Form {...form}>
+        <form onSubmit={handleSubmit} className="space-y-6 p-4">
+          {/* Row 1: Full Name & DOB */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Full Name <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="John Doe"
+                      {...field}
+                      value={formData.fullName}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        onInputChange(e);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Date of Birth
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      value={formData.dateOfBirth}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        onInputChange(e);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Row 2: Age & Gender */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Age <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="45"
+                      {...field}
+                      value={formData.age || ''}
+                      onChange={(e) => {
+                        const val = e.target.value ? Number(e.target.value) : 0;
+                        field.onChange(val);
+                        onInputChange(e);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Gender <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Sync with parent
+                      const synthEvent = {
+                        target: { name: 'gender', value },
+                      } as React.ChangeEvent<HTMLInputElement>;
+                      onInputChange(synthEvent);
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="MALE">Male</SelectItem>
+                      <SelectItem value="FEMALE">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Row 3: Phone & Registration Fee */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Phone{' '}
+                    <span className="text-gray-400 text-xs">(optional)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="+91 9876543210"
+                      {...field}
+                      value={formData.phone}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        onInputChange(e);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="registrationFee"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Registration Fee (₹){' '}
+                    <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="500"
+                      {...field}
+                      value={formData.registrationFee || ''}
+                      onChange={(e) => {
+                        const val = e.target.value ? Number(e.target.value) : 0;
+                        field.onChange(val);
+                        onInputChange(e);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Address */}
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Address{' '}
+                  <span className="text-gray-400 text-xs">(optional)</span>
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="123 Main Street, Village, District"
+                    className="resize-none"
+                    rows={2}
+                    {...field}
+                    value={formData.address}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      onInputChange(e);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Chief Complaint */}
+          <FormField
+            control={form.control}
+            name="chiefComplaint"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Symptoms / Reason for Visit{' '}
+                  <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Fever for 3 days, cough, body pain"
+                    className="resize-none"
+                    rows={3}
+                    {...field}
+                    value={formData.chiefComplaint}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      onInputChange(e);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Doctor ID */}
+          <FormField
+            control={form.control}
+            name="doctorId"
+            render={({ field }) => (
+              <FormItem className=''>
+                <FormLabel>
+                  Assign Doctor{' '}
+                  <span className="text-gray-400 text-xs">(optional)</span>
+                </FormLabel>
+                <Select
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    const synthEvent = {
+                      target: { name: 'doctorId', value },
+                    } as React.ChangeEvent<HTMLInputElement>;
+                    onInputChange(synthEvent);
+                  }}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className='w-full'>
+                      <SelectValue placeholder="Select doctor" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {initialDoctorData.map((doctor) => (
+                      <SelectItem key={doctor.id} value={doctor.id}>
+                        {doctor.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Submit */}
+          <SheetFooter>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="w-full md:w-auto"
+            >
+              {isPending ? 'Creating...' : 'Create Patient'}
+            </Button>
+          </SheetFooter>
+        </form>
+      </Form>
+    </>
+  );
 }
-
-export default PatientForm;

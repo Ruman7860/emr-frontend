@@ -32,9 +32,6 @@ function validatePatientData(data: any, isEditing?: boolean) {
     if (!data.fullName || typeof data.fullName !== 'string' || data.fullName.trim() === '') {
         throw new Error('Invalid input: Full name is required and must be a non-empty string');
     }
-    if ((!data.dateOfBirth || typeof data.dateOfBirth !== 'string' || isNaN(Date.parse(data.dateOfBirth))) && !isEditing) {
-        throw new Error('Invalid input: Date of birth is required and must be a valid date string');
-    }
     if ((!data.gender || typeof data.gender !== 'string' || data.gender.trim() === '') && !isEditing) {
         throw new Error('Invalid input: Gender is required and must be a non-empty string');
     }

@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createPatient, updatePatient, deletePatient, restorePatient, getPatients } from '@/app/actions/patients.actions';
+import { Patient } from '../../../../types/patient-type';
 import {
   Table,
   TableBody,
@@ -13,13 +14,10 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+} from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -29,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, Pencil, Trash2, Plus, Power, User,ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
+import { MoreHorizontal, Eye, Pencil, Trash2, Plus, Power, User, ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 import PatientForm from './patient-form';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '../empty-state';
@@ -41,19 +39,6 @@ import {
 import { Input } from '@/components/ui/input';
 import Loader from '../common/loader';
 
-type Patient = {
-  id: string;
-  fullName: string;
-  dateOfBirth: string;
-  gender: string;
-  address: string | null;
-  phone: string | null;
-  doctorId: string | null;
-  registrationFee: number;
-  patientNumber: string;
-  isActive: boolean;
-  deletedAt: Date | null;
-};
 
 type Props = {
   initialData: {
@@ -63,9 +48,25 @@ type Props = {
     limit: number;
     totalPages: number;
   };
+  initialDoctorData:{
+    id: string;
+    fullName: string;
+  }[]
 };
 
-export default function PatientClient({ initialData }: Props) {
+type FormData = {
+  fullName: string;
+  dateOfBirth: string;
+  age: number | null;
+  gender: string;
+  address: string;
+  phone: string;
+  chiefComplaint: string;
+  registrationFee: string;
+  doctorId: string;
+};
+
+export default function PatientClient({ initialData, initialDoctorData }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentPage = Number(searchParams.get('page') || '1');
@@ -78,10 +79,11 @@ export default function PatientClient({ initialData }: Props) {
   const [total, setTotal] = useState(initialData.total || 0);
   const [totalPages, setTotalPages] = useState(initialData.totalPages || 1);
   const [isPending, startTransition] = useTransition();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [localSearch, setLocalSearch] = useState(currentSearch);
   const [loading, setLoading] = useState(false);
+
 
   // Build query string helper
   const buildQueryString = (overrides: Partial<{ page: number; search: string; deleted: boolean }>) => {
@@ -109,6 +111,7 @@ export default function PatientClient({ initialData }: Props) {
             gender: patient.gender,
             address: patient.address,
             phone: patient.phone,
+            age: patient.age,
             patientNumber: patient.patientNumber,
             doctorId: patient.doctorId,
             registrationFee: patient.registrationFee,
@@ -146,21 +149,22 @@ export default function PatientClient({ initialData }: Props) {
     router.push(`/patients${buildQueryString({ page: newPage })}`);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     fullName: '',
     dateOfBirth: '',
+    age: null,
     gender: '',
     address: '',
     phone: '',
+    chiefComplaint: '',
     registrationFee: '',
     doctorId: '',
   });
 
-  // Create / Update
   const handleSubmit = async (e: React.FormEvent, values: any) => {
     e.preventDefault();
     startTransition(async () => {
@@ -204,6 +208,7 @@ export default function PatientClient({ initialData }: Props) {
                   dateOfBirth: patient.dateOfBirth,
                   gender: patient.gender,
                   address: patient.address,
+                  age: patient.age,
                   phone: patient.phone,
                   patientNumber: patient.patientNumber,
                   doctorId: patient.doctorId,
@@ -221,8 +226,18 @@ export default function PatientClient({ initialData }: Props) {
             throw new Error(createdPatient.message);
           }
         }
-        setIsDialogOpen(false);
-        setFormData({ fullName: '', dateOfBirth: '', gender: '', address: '', phone: '', registrationFee: '', doctorId: '' });
+        setIsSheetOpen(false);
+        setFormData({
+          fullName: '',
+          dateOfBirth: '',
+          gender: '',
+          address: '',
+          age: null,
+          chiefComplaint: '',
+          phone: '',
+          registrationFee: '',
+          doctorId: ''
+        });
         setEditingPatient(null);
       } catch (error: any) {
         toast.error(error.message || 'Something went wrong');
@@ -235,13 +250,15 @@ export default function PatientClient({ initialData }: Props) {
     setFormData({
       fullName: patient.fullName,
       dateOfBirth: new Date(patient.dateOfBirth).toISOString().split('T')[0],
+      age: patient.age,
       gender: patient.gender,
       address: patient.address || '',
       phone: patient.phone || '',
-      registrationFee: '',
+      chiefComplaint: patient.chiefComplaint || '',
+      registrationFee: patient.registrationFee?.toString() || '',
       doctorId: patient.doctorId || '',
     });
-    setIsDialogOpen(true);
+    setIsSheetOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -324,28 +341,20 @@ export default function PatientClient({ initialData }: Props) {
           <Badge>Total {isDeleted ? 'Removed' : 'Active'} Patients: {total}</Badge>
         </div>
         <div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="text-xs" size="sm" onClick={() => setEditingPatient(null)}>
-                <Plus className="text-xs" /> Add Patient
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{editingPatient ? 'Edit Patient' : 'Add Patient'}</DialogTitle>
-                <DialogDescription>
-                  {editingPatient ? 'Update the patient information below.' : 'Enter details for the new patient.'}
-                </DialogDescription>
-              </DialogHeader>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button size="sm">Add Patient</Button>
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-lg overflow-y-auto">
               <PatientForm
-                editingPatient={editingPatient}
+               initialDoctorData = {initialDoctorData}
                 formData={formData}
                 isPending={isPending}
                 onInputChange={handleInputChange}
                 onSubmit={handleSubmit}
               />
-            </DialogContent>
-          </Dialog>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
@@ -382,6 +391,7 @@ export default function PatientClient({ initialData }: Props) {
             <TableRow className="bg-background/50">
               <TableHead className="font-semibold">Full Name</TableHead>
               <TableHead>Date of Birth</TableHead>
+              <TableHead>Age</TableHead>
               <TableHead>Gender</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Patient Number</TableHead>
@@ -404,7 +414,8 @@ export default function PatientClient({ initialData }: Props) {
                   onClick={() => handleView(patient)}
                 >
                   <TableCell className="font-medium">{patient.fullName}</TableCell>
-                  <TableCell>{new Date(patient.dateOfBirth).toLocaleDateString()}</TableCell>
+                  <TableCell>{patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString(): "N/A"}</TableCell>
+                  <TableCell>{patient.age}</TableCell>
                   <TableCell>{patient.gender}</TableCell>
                   <TableCell>{patient.phone || 'N/A'}</TableCell>
                   <TableCell>{patient.patientNumber}</TableCell>
@@ -494,7 +505,7 @@ export default function PatientClient({ initialData }: Props) {
                       description="You haven’t added any patients yet."
                       icon={<User className="h-6 w-6 text-teal-600 dark:text-teal-400" />}
                       actionLabel="Add Patient"
-                      onAction={() => setIsDialogOpen(true)}
+                      onAction={() => setIsSheetOpen(true)}
                     />
                   )}
                 </TableCell>
@@ -510,7 +521,7 @@ export default function PatientClient({ initialData }: Props) {
           onClick={() => handlePageChange(currentPage - 1)}
           size={'sm'}
         >
-          <ArrowLeftIcon/>
+          <ArrowLeftIcon />
         </Button>
         <span className='text-xs'>Page {currentPage} of {totalPages}</span>
         <Button
@@ -518,7 +529,7 @@ export default function PatientClient({ initialData }: Props) {
           onClick={() => handlePageChange(currentPage + 1)}
           size={'sm'}
         >
-          <ArrowRightIcon/>
+          <ArrowRightIcon />
         </Button>
       </div>}
     </div>

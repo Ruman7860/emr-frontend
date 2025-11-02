@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import CustomSkeleton from '@/components/custom/skeleton/custom-skeleton';
 import { getPatients } from '@/app/actions/patients.actions';
 import PatientClient from '@/components/custom/patients/patients-client';
+import { getDoctors } from '@/app/actions/doctors/doctors.actions';
 
 const page = async ({
   searchParams,
@@ -32,6 +33,7 @@ const page = async ({
   const deleted = resolvedSearchParams.deleted === 'true';
 
   const patientsData = await getPatients(pageNum, limitNum, search, deleted);
+  const doctorData = await getDoctors();
 
   if (!patientsData.success) {
     console.error('Error fetching patients:', patientsData.message);
@@ -44,6 +46,7 @@ const page = async ({
     dateOfBirth: patient.dateOfBirth,
     gender: patient.gender,
     address: patient.address,
+    age: patient.age,
     phone: patient.phone,
     patientNumber: patient.patientNumber,
     doctorId: patient.doctorId,
@@ -51,6 +54,11 @@ const page = async ({
     isActive: !patient.deletedAt && patient.status === 'ACTIVE',
     deletedAt: patient.deletedAt,
   }));
+
+  const initialDoctorData = doctorData.data.map((doctor:any) => ({
+    id: doctor.id,
+    fullName: doctor.user.name,
+  }))
 
   return (
     <Suspense fallback={<CustomSkeleton />}>
@@ -62,6 +70,7 @@ const page = async ({
           limit: patientsData.data.limit,
           totalPages: patientsData.data.totalPages,
         }}
+        initialDoctorData = {initialDoctorData}
       />
     </Suspense>
   );
