@@ -197,6 +197,43 @@ async function restorePatient(id: string) {
     }
 }
 
+async function collectPatientPayment(payload: {
+    patientId: string;
+    visitId: string;
+    amount: number;
+    billingType: string;
+    paymentMode: string;
+    markPaid: boolean;
+}) {
+    try {
+        const { headers } = await getSessionAndHeaders();
+
+        const res = await fetch(
+            `${API_BASE}/patients/${payload.patientId}/collect-payment`,
+            {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify(payload),
+            }
+        );
+
+        if (!res.ok) {
+            throw new Error(`Failed to collect payment: ${res.statusText}`);
+        }
+
+        const data = await res.json();
+
+        // 🔁 Revalidate patient page + patients list
+        revalidatePath(`/patients/${payload.patientId}`);
+        revalidatePath('/patients');
+
+        return data;
+    } catch (error) {
+        throw new Error(`Error collecting payment: ${error}`);
+    }
+}
+
+
 export {
     getPatients,
     getPatientById,
@@ -204,5 +241,6 @@ export {
     createPatient,
     updatePatient,
     deletePatient,
-    restorePatient
+    restorePatient,
+    collectPatientPayment
 }
