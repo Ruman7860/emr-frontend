@@ -222,6 +222,8 @@ export default function PatientClient({ initialData, initialDoctorData }: Props)
               }
             }
             toast.success('Patient created successfully');
+            // navigating to patient detail page.
+            router.push(`/patients/${createdPatient.data.id}`);
           } else {
             throw new Error(createdPatient.message);
           }

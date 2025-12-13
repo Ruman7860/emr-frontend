@@ -95,11 +95,11 @@ async function getPatientById(id: string) {
     }
 }
 
-async function getTimelinePatientData(id:string) {
+async function getTimelinePatientData(id: string) {
     try {
         validateId(id);
         const { headers } = await getSessionAndHeaders();
-         const res = await fetch(`${API_BASE}/patients/${id}/timeline`, {
+        const res = await fetch(`${API_BASE}/patients/${id}/timeline`, {
             headers,
             cache: 'no-store',
         });

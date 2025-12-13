@@ -142,6 +142,7 @@ export default function PatientForm({
                   <FormControl>
                     <Input
                       placeholder="John Doe"
+                      className='focus-visible:ring-0'
                       {...field}
                       value={formData.fullName}
                       onChange={(e) => {
@@ -166,6 +167,7 @@ export default function PatientForm({
                   <FormControl>
                     <Input
                       type="date"
+                      className='focus-visible:ring-0'
                       {...field}
                       value={formData.dateOfBirth}
                       onChange={(e) => {
@@ -197,6 +199,7 @@ export default function PatientForm({
                       placeholder="45"
                       {...field}
                       value={formData.age || ''}
+                      className='focus-visible:ring-0'
                       onChange={(e) => {
                         const val = e.target.value ? Number(e.target.value) : 0;
                         field.onChange(val);
@@ -252,8 +255,7 @@ export default function PatientForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Phone{' '}
-                    <span className="text-gray-400 text-xs">(optional)</span>
+                    Phone <span className="text-gray-400 text-xs">(optional)</span>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -287,6 +289,7 @@ export default function PatientForm({
                       placeholder="500"
                       {...field}
                       value={formData.registrationFee || ''}
+                      className='focus-visible:ring-0'
                       onChange={(e) => {
                         const val = e.target.value ? Number(e.target.value) : 0;
                         field.onChange(val);
@@ -313,7 +316,7 @@ export default function PatientForm({
                 <FormControl>
                   <Textarea
                     placeholder="123 Main Street, Village, District"
-                    className="resize-none"
+                    className="resize-none focus-visible:ring-0"
                     rows={2}
                     {...field}
                     value={formData.address}
@@ -341,7 +344,7 @@ export default function PatientForm({
                 <FormControl>
                   <Textarea
                     placeholder="Fever for 3 days, cough, body pain"
-                    className="resize-none"
+                    className="resize-none focus-visible:ring-0"
                     rows={3}
                     {...field}
                     value={formData.chiefComplaint}
