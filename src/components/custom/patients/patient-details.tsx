@@ -12,8 +12,10 @@ import {
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import CollectPaymentModal from "./collect-payment";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { collectPatientPayment } from "@/app/actions/patients.actions";
+import { getStatusBadge } from "@/util/getStatusBadge";
+import { useSocket } from "@/context/socket-context";
 
 interface PatientDetailsProps {
     patientDetails: {
@@ -44,6 +46,13 @@ interface PatientDetailsProps {
 }
 
 export default function PatientDetails({ patientDetails }: PatientDetailsProps) {
+
+    const { socket } = useSocket();
+
+    useEffect(() => {
+        if (!socket) return;
+        console.log('Patient page: Socket accessible:', socket.connected ? '✅ Connected' : '❌ Disconnected');
+    }, [socket]);
     const [openPaymentModal, setOpenPaymentModal] = useState(false);
     const router = useRouter();
 
@@ -54,22 +63,6 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
         patientDetails.overview.todayVisit?.billings?.find(
             (b: any) => b.status === "UNPAID"
         );
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'ACTIVE':
-                return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-            case 'INACTIVE':
-                return <Badge variant="destructive">Inactive</Badge>;
-            case 'PENDING_PAYMENT':
-            case 'UNPAID':
-                return <Badge className="bg-orange-100 text-orange-800">Pending Payment</Badge>;
-            case 'PAID':
-                return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
-            default:
-                return <Badge variant="secondary">{status || "Unknown"}</Badge>;
-        }
-    };
 
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-6xl">

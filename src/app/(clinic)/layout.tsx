@@ -7,30 +7,35 @@ import Navbar from '@/components/custom/Navbar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import DashboardSideBar from '@/components/custom/sidebar/SideBar';
 import DashboardSkeleton from '@/components/custom/skeleton/main-dashboard-skeleton';
+import { NotificationProvider } from '@/context/notification-context';
+import { SocketProvider } from '@/context/socket-context';
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-
 
   if (status === 'unauthenticated') {
     router.push('/login');
     return;
   };
 
-  if (status === 'loading') return <DashboardSkeleton/>
+  if (status === 'loading') return <DashboardSkeleton />
 
   return (
     <>
-      <SidebarProvider>
-        <DashboardSideBar />
-        <div className="flex h-screen w-full bg-gray-100 dark:bg-gray-900">
-          <main className="flex-1 overflow-auto">
-            <Navbar />
-            {children}
-          </main>
-        </div>
-      </SidebarProvider>
+      <SocketProvider accessToken={session?.accessToken as string}>
+        <NotificationProvider>
+          <SidebarProvider>
+            <DashboardSideBar />
+            <div className="flex h-screen w-full bg-gray-100 dark:bg-gray-900">
+              <main className="flex-1 overflow-auto">
+                <Navbar />
+                {children}
+              </main>
+            </div>
+          </SidebarProvider>
+        </NotificationProvider>
+      </SocketProvider>
     </>
   );
 }

@@ -52,7 +52,6 @@ const LoginForm = () => {
       callbackUrl: '/dashboard'
     });
 
-    console.log("res", res);
     setLoading(false);
 
     if (res?.error) {

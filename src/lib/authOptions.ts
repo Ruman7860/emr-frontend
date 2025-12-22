@@ -21,8 +21,6 @@ export const authOptions: NextAuthOptions = {
             password: credentials.password,
           });
 
-          console.log("Login response:", data);
-
           const user = data.data?.user;
           const accessToken = data.data?.access_token;
           const tenant = data.data?.tenant;

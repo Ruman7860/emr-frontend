@@ -22,7 +22,7 @@ const Page = async ({ params }: PageProps) => {
   const { id: patientId } = await params
 
   const patientsDetails = await getPatientById(patientId);
-  console.log("patientDetails", patientsDetails)
+
   return (
     <Suspense fallback={<CustomSkeleton />}>
       <PatientDetails patientDetails={patientsDetails.data} />
