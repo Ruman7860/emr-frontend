@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { CustomTabs, CustomTabsList, CustomTabsTrigger, CustomTabsContent } from '@/components/custom/common/custom-tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Trash2, Loader2, Edit, Plus } from 'lucide-react';
+import { Clock, Trash2, Loader2, Edit, Plus, FileText, Download } from 'lucide-react';
 import { getPrescriptionsByVisit, createPrescription, updatePrescription, deletePrescription } from '@/app/actions/prescriptions.actions';
 import { getLabTestsByVisit, createLabTest, updateLabTest, deleteLabTest } from '@/app/actions/labtests.actions';
 import { getNotesByVisit, updateNotes } from '@/app/actions/notes.actions';
+import { generatePrescriptionPDF } from '@/app/actions/prescription-pdf.actions';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -65,6 +66,9 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
     const [loadingNotes, setLoadingNotes] = useState(false);
     const [fetchingNotes, setFetchingNotes] = useState(true);
 
+    // PDF generation state
+    const [generatingPDF, setGeneratingPDF] = useState(false);
+
     const [newMedication, setNewMedication] = useState({
         drugName: '',
         dosage: '1 tablet',
@@ -118,7 +122,6 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
         try {
             setFetchingLabTest(true);
             const response = await getLabTestsByVisit(visitId);
-            console.log('LabTests response:', response);
             if (response.success && response.data) {
                 setLabTests(response.data);
             } else {
@@ -136,7 +139,6 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
         try {
             setFetchingNotes(true);
             const response = await getNotesByVisit(visitId);
-            console.log('Notes response:', response);
             if (response.success && response.data) {
                 setNotes(response.data.notes || '');
             } else {
@@ -363,6 +365,31 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
         }
     };
 
+    // PDF generation handler
+    const handleGeneratePDF = async () => {
+        if (!prescription) {
+            toast.error('No prescription found. Please add medications first.');
+            return;
+        }
+
+        try {
+            setGeneratingPDF(true);
+            const response = await generatePrescriptionPDF(visitId, 1);
+
+            if (response.success && response.data) {
+                window.open(response.data.downloadUrl, '_blank');
+                toast.success('Prescription PDF generated successfully!');
+            } else {
+                throw new Error(response.message || 'Failed to generate PDF');
+            }
+        } catch (error: any) {
+            console.error('Error generating PDF:', error);
+            toast.error(error.message || 'Failed to generate prescription PDF');
+        } finally {
+            setGeneratingPDF(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Patient Header */}
@@ -478,7 +505,29 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
 
                     <Card>
                         <CardContent className="space-y-4">
-                            <h3 className="text-lg font-semibold">Prescription</h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold">Prescription</h3>
+                                {prescription && medications.length > 0 && (
+                                    <Button
+                                        onClick={handleGeneratePDF}
+                                        disabled={generatingPDF}
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        {generatingPDF ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FileText className="h-4 w-4" />
+                                                Generate PDF
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
 
                             {fetchingPrescription ? (
                                 <div className="flex items-center justify-center py-8">
