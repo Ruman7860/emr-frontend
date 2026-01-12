@@ -1,0 +1,24 @@
+Project Description for Resume
+Project Title: Multi-Tenant Electronic Medical Record (EMR) System
+Role: Full Stack Developer
+
+Description: Designed and developed a comprehensive, scalable Electronic Medical Record (EMR) system tailored for multi-specialty clinics. The application streamlines patient management, consultation workflows, and prescription generation while supporting multi-tenancy to serve multiple clinics from a single deployment.
+
+Tech Stack:
+
+Frontend: Next.js (App Router), TypeScript, TailwindCSS, Shadcn UI, React Query.
+Backend: NestJS, Prisma ORM, MongoDB, Socket.io, Puppeteer, Cloudinary.
+DevOps/Tools: Docker, Git, JWT Authentication.
+Key Features & Technical Implementation:
+
+Real-Time Queue Management: Implemented a live patient queue system using Socket.io, enabling real-time updates for doctors and receptionists as patient status changes (e.g., waiting, in-consultation, completed) without page refreshing.
+Digital Consultation Workflow: Built a unified doctor dashboard to manage clinical notes, prescribed medications, and lab orders dynamically during patient visits.
+Automated PDF Generation: Engineered a robust prescription generation service using Puppeteer and EJS templates. Solved complex rendering challenges (including Hindi font support) for generating professional, print-ready PDF prescriptions.
+Secure Document Storage: Integrated Cloudinary for secure, scalable storage of patient records and generated prescriptions, implementing signed URLs for secure, time-limited access.
+Multi-Tenancy Architecture: Designed a flexible database schema using Prisma and MongoDB to support data isolation for multiple tenants (clinics) within the same system.
+Role-Based Access Control (RBAC): Implemented secure authentication and authorization using Passport.js and JWT, ensuring granular access control for Admins, Doctors, Staff, and Nurses.
+Impact:
+
+Digitized manual clinic workflows, reducing patient wait times and paperwork.
+Enhanced prescription accuracy and professionalism with automated, standardized PDF output.
+Scalable architecture prepared for onboarding multiple clinics with minimal infrastructure overhead.
