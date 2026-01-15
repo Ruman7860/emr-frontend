@@ -72,4 +72,37 @@ async function startConsultation(payload: {
   }
 }
 
-export { getDoctorQueue, startConsultation };
+async function endConsultation(payload: {
+  patientId: string;
+  visitId: string;
+  durationInSeconds: number;
+}) {
+  try {
+    const { headers } = await getSessionAndHeaders();
+
+    const res = await fetch(`${API_BASE}/queue/end-consultation`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      // Try to parse error message from backend
+      let errorMessage = res.statusText;
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        // ignore JSON parse error
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    throw new Error(`${error}`);
+  }
+}
+
+export { getDoctorQueue, startConsultation, endConsultation };

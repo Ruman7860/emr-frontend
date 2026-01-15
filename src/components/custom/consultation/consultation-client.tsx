@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CustomTabs, CustomTabsList, CustomTabsTrigger, CustomTabsContent } from '@/components/custom/common/custom-tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Trash2, Loader2, Edit, Plus, FileText, Download } from 'lucide-react';
-import { getPrescriptionsByVisit, createPrescription, updatePrescription, deletePrescription } from '@/app/actions/prescriptions.actions';
+import { Clock, Trash2, Loader2, Edit, Plus, FileText, Download, Eye } from 'lucide-react';
+import { getPrescriptionsByVisit, createPrescription, updatePrescription, deletePrescription, getPrescriptionDocumentsByPatient } from '@/app/actions/prescriptions.actions';
 import { getLabTestsByVisit, createLabTest, updateLabTest, deleteLabTest } from '@/app/actions/labtests.actions';
 import { getNotesByVisit, updateNotes } from '@/app/actions/notes.actions';
 import { generatePrescriptionPDF } from '@/app/actions/prescription-pdf.actions';
+import { endConsultation } from '@/app/actions/queue.actions';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
 
 interface Medication {
     drugName: string;
@@ -40,11 +43,22 @@ interface LabTest {
     createdAt: string;
 }
 
+interface PrescriptionDocument {
+    id: string;
+    prescriptionId: string;
+    visitId: string;
+    version: number;
+    generatedAt: string;
+    visitDate: string;
+    downloadUrl: string;
+}
+
 interface ConsultationClientProps {
     patientData: any;
 }
 
 export default function ConsultationClient({ patientData }: ConsultationClientProps) {
+    const router = useRouter();
     const [timer, setTimer] = useState(0);
 
     // Prescription state
@@ -66,6 +80,13 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
     const [loadingNotes, setLoadingNotes] = useState(false);
     const [fetchingNotes, setFetchingNotes] = useState(true);
 
+    // Documents state
+    const [documents, setDocuments] = useState<PrescriptionDocument[]>([]);
+    const [fetchingDocuments, setFetchingDocuments] = useState(true);
+
+    // End consultation state
+    const [endingConsultation, setEndingConsultation] = useState(false);
+
     // PDF generation state
     const [generatingPDF, setGeneratingPDF] = useState(false);
 
@@ -81,6 +102,9 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
     const visitId = patientData?.overview?.todayVisit?.id;
     const patientId = patientData?.header?.id;
 
+    // Use ref to track if data has been fetched to prevent multiple calls
+    const hasFetchedData = useRef(false);
+
     // Timer effect
     useEffect(() => {
         const interval = setInterval(() => {
@@ -89,14 +113,20 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
         return () => clearInterval(interval);
     }, []);
 
-    // Fetch all data on mount
+    // Fetch all data on mount - only once
     useEffect(() => {
+        if (hasFetchedData.current) return;
+
         if (visitId) {
+            hasFetchedData.current = true;
             fetchPrescriptions();
             fetchLabTests();
             fetchNotes();
         }
-    }, [visitId]);
+        if (patientId) {
+            fetchDocuments();
+        }
+    }, [visitId, patientId]);
 
     const fetchPrescriptions = async () => {
         try {
@@ -365,6 +395,35 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
         }
     };
 
+    // Documents handlers
+    const fetchDocuments = async () => {
+        try {
+            setFetchingDocuments(true);
+            const response = await getPrescriptionDocumentsByPatient(patientId);
+            if (response.success && response.data) {
+                setDocuments(response.data);
+            } else {
+                setDocuments([]);
+            }
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+            toast.error('Failed to load documents');
+        } finally {
+            setFetchingDocuments(false);
+        }
+    };
+
+    const handleViewDocument = (url: string) => {
+        window.open(url, '_blank');
+    };
+
+    const handleDownloadDocument = (url: string, version: number) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `prescription_v${version}.pdf`;
+        link.click();
+    };
+
     // PDF generation handler
     const handleGeneratePDF = async () => {
         if (!prescription) {
@@ -379,6 +438,8 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
             if (response.success && response.data) {
                 window.open(response.data.downloadUrl, '_blank');
                 toast.success('Prescription PDF generated successfully!');
+                // Refresh documents list
+                await fetchDocuments();
             } else {
                 throw new Error(response.message || 'Failed to generate PDF');
             }
@@ -387,6 +448,29 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
             toast.error(error.message || 'Failed to generate prescription PDF');
         } finally {
             setGeneratingPDF(false);
+        }
+    };
+
+    // End consultation handler
+    const handleEndConsultation = async () => {
+        try {
+            setEndingConsultation(true);
+            const response = await endConsultation({
+                patientId,
+                visitId,
+                durationInSeconds: timer
+            });
+
+            if (response.success) {
+                toast.success('Consultation ended successfully');
+                router.push('/queue');
+            } else {
+                throw new Error(response.message || 'Failed to end consultation');
+            }
+        } catch (error: any) {
+            console.error('Error ending consultation:', error);
+            toast.error(error.message || 'Failed to end consultation');
+            setEndingConsultation(false);
         }
     };
 
@@ -413,13 +497,26 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                             <p className="text-xs text-muted-foreground">Complaint entered 7 days end</p>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center text-sm">
-                                <Clock className="h-4 w-4" />
-                                <span>: {formatTime(timer)}</span>
+                        {patientData.header.visitStatus !== 'COMPLETED' ? (
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center text-sm">
+                                    <Clock className="h-4 w-4" />
+                                    <span>: {formatTime(timer)}</span>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    onClick={handleEndConsultation}
+                                    disabled={endingConsultation}
+                                >
+                                    {endingConsultation ? 'Ending...' : 'End Consultation'}
+                                </Button>
                             </div>
-                            <Button size="sm">End Consultation</Button>
-                        </div>
+                        ) : (
+                            <div className="flex items-center gap-4">
+                                <Badge className='bg-green-700 text-white' variant="outline">Completed</Badge>
+                                <p className="text-sm">Consultation Duration: {formatTime(patientData.overview.todayVisit?.consultationTime || 0)}</p>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -679,8 +776,52 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                 {/* Documents Tab */}
                 <CustomTabsContent value="documents" className="space-y-6">
                     <Card>
-                        <CardContent className="p-6">
-                            <p className="text-muted-foreground">Documents content will go here...</p>
+                        <CardContent className="space-y-4">
+                            <h3 className="text-lg font-semibold">Prescription Documents</h3>
+
+                            {fetchingDocuments ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                </div>
+                            ) : documents.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4">No documents available yet. Generate a prescription to create documents.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {documents.map((doc) => (
+                                        <div key={doc.id} className="flex items-center justify-between border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold">Prescription Version {doc.version}</h4>
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                    Generated: {format(new Date(doc.generatedAt), 'MMM dd, yyyy hh:mm a')}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Visit Date: {format(new Date(doc.visitDate), 'MMM dd, yyyy')}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 ml-4">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                    onClick={() => handleViewDocument(doc.downloadUrl)}
+                                                    title="View Document"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                    onClick={() => handleDownloadDocument(doc.downloadUrl, doc.version)}
+                                                    title="Download Document"
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </CustomTabsContent>

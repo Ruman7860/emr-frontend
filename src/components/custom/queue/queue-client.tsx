@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, User } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { startConsultation } from '@/app/actions/queue.actions';
@@ -54,6 +54,12 @@ export default function QueueClient({
     router.push(`/consultation/${patientId}`);
   };
 
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins} min ${secs}s`;
+  };
+
   useEffect(() => {
     if (!socket) return;
 
@@ -85,14 +91,34 @@ export default function QueueClient({
       );
     };
 
+    const handleConsultationEnd = (payload: any) => {
+      // Update the queue item to completed status
+      setQueue((prev) =>
+        prev.map((q) =>
+          q.visitId === payload.visitId
+            ? {
+              ...q,
+              patient: {
+                ...q.patient,
+                visitStatus: 'COMPLETED'
+              },
+              consultationTime: payload.consultationTime
+            }
+            : q
+        )
+      );
+    };
+
     socket.on('QUEUE_REMOVE', handleQueueRemove);
     socket.on('CONSULTATION_START', handleConsultationStart);
     socket.on('QUEUE_UPDATE', handleQueueUpdate);
+    socket.on('CONSULTATION_END', handleConsultationEnd);
 
     return () => {
       socket.off('QUEUE_REMOVE', handleQueueRemove);
       socket.off('CONSULTATION_START', handleConsultationStart);
       socket.off('QUEUE_UPDATE', handleQueueUpdate);
+      socket.off('CONSULTATION_END', handleConsultationEnd);
     };
   }, [socket, currentDoctorId]);
 
@@ -110,6 +136,12 @@ export default function QueueClient({
             In Consultation
           </Badge>
         );
+      case 'COMPLETED':
+        return (
+          <Badge className="bg-green-500 text-white hover:bg-green-600">
+            Completed
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -117,9 +149,12 @@ export default function QueueClient({
 
   const waitingCount = queue.filter(q => q.patient.visitStatus === 'PAID_WAITING').length;
   const inConsultationCount = queue.filter(q => q.patient.visitStatus === 'IN_CONSULTATION').length;
+  const completedCount = queue.filter(q => q.patient.visitStatus === 'COMPLETED').length;
+
+  console.log("QUEUE_LOG", queue)
 
   return (
-    <div className="container mx-auto p-6">   
+    <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">
           Patient Queue
@@ -130,6 +165,9 @@ export default function QueueClient({
           </Badge>
           <Badge className="px-3 py-1 bg-blue-500 text-white">
             {inConsultationCount} In Consultation
+          </Badge>
+          <Badge className="px-3 py-1 bg-green-500 text-white">
+            {completedCount} Completed
           </Badge>
         </div>
       </div>
@@ -180,18 +218,30 @@ export default function QueueClient({
 
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {isInConsultation ? 'In consultation' : 'Waiting since'}{' '}
-                      {formatDistanceToNow(
-                        new Date(item.visitDate),
-                        { addSuffix: true }
-                      )}
-                    </div>
+                      {item.patient.visitStatus === 'COMPLETED' ? (
+                        <span>
+                          Completed - Duration: {item.consultationTime ? formatDuration(item.consultationTime) : 'N/A'}
+                        </span>
+                      ) : isInConsultation ? (
+                        <span>In consultation {formatDistanceToNow(new Date(item.visitDate), { addSuffix: true })}</span>
+                      ) : (
+                        <span>Waiting {formatDistanceToNow(new Date(item.visitDate), { addSuffix: true })}</span>
+                      )}                 </div>
                   </div>
 
                   {/* Right - Action Buttons (Only for Doctors) */}
                   {isDoctor && (
                     <div className="flex gap-2">
-                      {isMyConsultation ? (
+                      {item.patient.visitStatus === 'COMPLETED' ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-sm"
+                          onClick={() => router.push(`/consultation/${item.patient.id}`)}
+                        >
+                          View Prescription
+                        </Button>
+                      ) : isMyConsultation ? (
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 cursor-pointer text-sm"

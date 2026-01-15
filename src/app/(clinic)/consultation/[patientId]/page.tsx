@@ -21,6 +21,8 @@ const ConsultationPage = async ({ params }: PageProps) => {
 
     const patientDataResponse = await getPatientById(patientId);
 
+    console.log("patientDataResponse", patientDataResponse.data);
+
     return (
         <Suspense fallback={<CustomSkeleton />}>
             <div className="container mx-auto p-6">

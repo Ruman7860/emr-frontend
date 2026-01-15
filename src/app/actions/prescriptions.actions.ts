@@ -169,10 +169,52 @@ async function deletePrescription(id: string) {
     }
 }
 
+async function getPrescriptionDocumentsByPatient(patientId: string) {
+    try {
+        validateId(patientId);
+        const { headers } = await getSessionAndHeaders();
+        const res = await fetch(`${API_BASE}/prescriptions/documents/patient/${patientId}`, {
+            headers,
+            cache: 'no-store',
+        });
+
+        if (!res.ok) {
+            throw new Error(`Failed to fetch prescription documents: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        return data;
+    } catch (error) {
+        throw new Error(`Error fetching prescription documents: ${error}`);
+    }
+}
+
+async function getDocumentDownloadUrl(documentId: string) {
+    try {
+        validateId(documentId);
+        const { headers } = await getSessionAndHeaders();
+        const res = await fetch(`${API_BASE}/prescriptions/documents/${documentId}/download`, {
+            headers,
+            cache: 'no-store',
+        });
+
+        if (!res.ok) {
+            throw new Error(`Failed to get download URL: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        return data;
+    } catch (error) {
+        throw new Error(`Error getting download URL: ${error}`);
+    }
+}
+
 export {
     getPrescriptionsByVisit,
     getPrescriptionById,
     createPrescription,
     updatePrescription,
     deletePrescription,
+    getPrescriptionDocumentsByPatient,
+    getDocumentDownloadUrl,
 };
