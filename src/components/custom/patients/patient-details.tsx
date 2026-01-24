@@ -2,12 +2,15 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CustomTabs, CustomTabsList, CustomTabsTrigger, CustomTabsContent } from '@/components/custom/common/custom-tabs';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
     User, Calendar, Phone, MapPin, Stethoscope, Activity, Clock,
-    DollarSign, FileText, Pencil, CreditCard, AlertCircle
+    DollarSign, FileText, Pencil, CreditCard, AlertCircle,
+    View,
+    Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -106,16 +109,16 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
             </div>
 
             {/* Tabs Section */}
-            <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid grid-cols-4 w-full mb-6 bg-muted/50">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="visits">Visits ({patientDetails.visits.length})</TabsTrigger>
-                    <TabsTrigger value="billing">Billing ({patientDetails.payments.length})</TabsTrigger>
-                    <TabsTrigger value="records">Records</TabsTrigger>
-                </TabsList>
+            <CustomTabs defaultValue="overview" className="w-full">
+                <CustomTabsList className="grid grid-cols-4 w-full mb-6 bg-muted/50">
+                    <CustomTabsTrigger value="overview">Overview</CustomTabsTrigger>
+                    <CustomTabsTrigger value="visits">Visits ({patientDetails.visits.length})</CustomTabsTrigger>
+                    <CustomTabsTrigger value="billing">Billing ({patientDetails.payments.length})</CustomTabsTrigger>
+                    <CustomTabsTrigger value="records">Records</CustomTabsTrigger>
+                </CustomTabsList>
 
                 {/* Overview Tab */}
-                <TabsContent value="overview" className="space-y-6">
+                <CustomTabsContent value="overview" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card>
                             <CardHeader>
@@ -153,7 +156,7 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
                                 <CardHeader>
                                     <CardTitle className="text-lg flex items-center gap-2">
                                         <Stethoscope className="h-5 w-5 text-teal-600" />
-                                        Today&apos;s Visit
+                                        Latest Visit
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -181,10 +184,10 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
                             </Card>
                         )}
                     </div>
-                </TabsContent>
+                </CustomTabsContent>
 
                 {/* Visits Tab */}
-                <TabsContent value="visits">
+                <CustomTabsContent value="visits">
                     <Card>
                         <CardHeader>
                             <CardTitle>Visit History</CardTitle>
@@ -206,7 +209,9 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
                                                     <p className="mt-2">{visit.notes || visit.chiefComplaint}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-semibold">₹{visit.visitFee || 0}</p>
+                                                    <p className="font-semibold mb-1">₹{visit.visitFee || 0}</p>
+                                                    {/* Use visit-specific status, fallback to COMPLETED if not present (legacy data) */}
+                                                    {getStatusBadge(visit.visitStatus || "COMPLETED")}
                                                 </div>
                                             </div>
                                         </div>
@@ -217,10 +222,10 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
                             )}
                         </CardContent>
                     </Card>
-                </TabsContent>
+                </CustomTabsContent>
 
                 {/* Billing Tab */}
-                <TabsContent value="billing">
+                <CustomTabsContent value="billing">
                     <Card>
                         <CardHeader>
                             <CardTitle>Billing & Payments</CardTitle>
@@ -249,22 +254,31 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
                             )}
                         </CardContent>
                     </Card>
-                </TabsContent>
+                </CustomTabsContent>
 
                 {/* Records Tab (Lab Tests, Prescriptions, etc.) */}
-                <TabsContent value="records">
+                <CustomTabsContent value="records">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Lab Tests</CardTitle>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Activity className="h-5 w-5 text-teal-600" />
+                                    Lab Tests
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 {patientDetails.labTests.length > 0 ? (
                                     <div className="space-y-3">
                                         {patientDetails.labTests.map((test: any) => (
-                                            <div key={test.id} className="p-3 border rounded-lg">
-                                                <p className="font-medium">{test.name}</p>
-                                                <p className="text-sm text-muted-foreground">{test.date}</p>
+                                            <div key={test.id} className="p-3 border rounded-lg bg-muted/20">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-medium">{test.tests}</p>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {format(new Date(test.createdAt), "dd MMM yyyy")}
+                                                    </p>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -276,18 +290,78 @@ export default function PatientDetails({ patientDetails }: PatientDetailsProps) 
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Prescriptions & Operations</CardTitle>
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-teal-600" />
+                                    Prescriptions
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-center text-muted-foreground py-10">
-                                    <AlertCircle className="h-12 w-12 mx-auto mb-3 text-muted" />
-                                    <p>No prescriptions or operations recorded yet.</p>
-                                </div>
+                                {patientDetails.prescriptions.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {patientDetails.prescriptions.map((pres: any) => (
+                                            <div key={pres.id} className="p-3 border rounded-lg bg-muted/20">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-medium">Prescription #{pres.id.slice(-6)}</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                            {pres.medications?.length || 0} Medications
+                                                        </p>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {format(new Date(pres.createdAt), "dd MMM yyyy")}
+                                                    </p>
+                                                </div>
+                                                <div className="mt-4 rounded-lg p-4 text-black dark:text-white">
+                                                    <h4 className="mb-3 text-sm font-semibold">
+                                                        Related Documents
+                                                    </h4>
+
+                                                    {pres.prescriptionDocuments?.length ? (
+                                                        <ul className="space-y-2">
+                                                            {pres.prescriptionDocuments.map((doc: any) => (
+                                                                <li
+                                                                    key={doc.id}
+                                                                    className="flex items-center justify-between rounded-md px-3 py-2 shadow-sm transition"
+                                                                >
+                                                                    <div className="flex items-center gap-2 text-sm">
+                                                                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium">
+                                                                            Rx
+                                                                        </span>
+                                                                        <span>Prescription {doc.version}</span>
+                                                                    </div>
+
+                                                                    <a
+                                                                        href={doc.fileUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-sm font-medium hover:text-indigo-800"
+                                                                    >
+                                                                        <Eye className="h-4 w-4"/>
+                                                                    </a>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p className="text-sm italic">
+                                                            No related documents available
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <AlertCircle className="h-10 w-10 mx-auto mb-3 text-muted" />
+                                        <p>No prescriptions recorded.</p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
-                </TabsContent>
-            </Tabs>
+                </CustomTabsContent>
+            </CustomTabs>
 
             {/* Payment Modal */}
             <CollectPaymentModal

@@ -433,7 +433,7 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
 
         try {
             setGeneratingPDF(true);
-            const response = await generatePrescriptionPDF(visitId, 1);
+            const response = await generatePrescriptionPDF(visitId);
 
             if (response.success && response.data) {
                 window.open(response.data.downloadUrl, '_blank');

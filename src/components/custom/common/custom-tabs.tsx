@@ -102,15 +102,19 @@ export function CustomTabsContent({ value, children, className }: CustomTabsCont
     }
 
     const { activeTab } = context;
-
-    if (activeTab !== value) {
-        return null;
-    }
+    const isActive = activeTab === value;
 
     return (
         <div
             role="tabpanel"
-            className={cn('mt-6 focus:outline-none', className)}
+            className={cn(
+                'transition-all duration-300 ease-in-out',
+                isActive
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-2 pointer-events-none absolute',
+                'mt-6',
+                className
+            )}
         >
             {children}
         </div>

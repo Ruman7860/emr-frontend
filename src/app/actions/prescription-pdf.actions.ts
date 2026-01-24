@@ -23,13 +23,13 @@ async function getSessionAndHeaders() {
     }
 }
 
-async function generatePrescriptionPDF(visitId: string, version: number = 1) {
+async function generatePrescriptionPDF(visitId: string) {
     try {
         const { headers } = await getSessionAndHeaders();
         const res = await fetch(`${API_BASE}/prescriptions/generate-pdf`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ visitId, version }),
+            body: JSON.stringify({ visitId }),
         });
 
         if (!res.ok) {
