@@ -10,6 +10,8 @@ export type Patient = {
   doctorId: string | null;
   registrationFee: number;
   patientNumber: string;
+  visitStatus: string;
+  lastCompletedVisitDate: string | null;
   isActive: boolean;
   deletedAt: Date | null;
 };

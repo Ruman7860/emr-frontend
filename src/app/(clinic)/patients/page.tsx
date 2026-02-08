@@ -39,7 +39,7 @@ const page = async ({
     console.error('Error fetching patients:', patientsData.message);
     return <div>Error: {patientsData.message}</div>;
   }
-
+  
   const initialPatients = patientsData.data.patients.map((patient: any) => ({
     id: patient.id,
     fullName: patient.fullName,
@@ -51,6 +51,7 @@ const page = async ({
     patientNumber: patient.patientNumber,
     doctorId: patient.doctorId,
     registrationFee: patient.registrationFee,
+    visitStatus: patient.visitStatus,
     isActive: !patient.deletedAt && patient.status === 'ACTIVE',
     deletedAt: patient.deletedAt,
   }));

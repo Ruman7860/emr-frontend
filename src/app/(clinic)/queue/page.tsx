@@ -5,7 +5,7 @@ import { isTokenExpired } from '@/lib/checkToken';
 import { Suspense } from 'react';
 import CustomSkeleton from '@/components/custom/skeleton/custom-skeleton';
 import QueueClient from '@/components/custom/queue/queue-client';
-import { getDoctorQueue } from '@/app/actions/queue.actions';
+import { getDoctorQueue, getCompletedQueue } from '@/app/actions/queue.actions';
 
 const Page = async () => {
   const session = await getServerSession(authOptions);
@@ -17,17 +17,21 @@ const Page = async () => {
     redirect('/login');
   }
 
-  // 2️⃣ Initial queue load (REST)
-  const queueResponse = await getDoctorQueue();
+  // 2️⃣ Initial queue load (REST) - fetch both active and completed
+  const [activeQueueResponse, completedQueueResponse] = await Promise.all([
+    getDoctorQueue(),
+    getCompletedQueue(),
+  ]);
 
-  if (!queueResponse.success) {
+  if (!activeQueueResponse.success) {
     return <div>Error loading queue</div>;
   }
 
   return (
     <Suspense fallback={<CustomSkeleton />}>
       <QueueClient
-        initialQueue={queueResponse.data}
+        initialQueue={activeQueueResponse.data}
+        completedQueue={completedQueueResponse.success ? completedQueueResponse.data : []}
         accessToken={session.accessToken}
       />
     </Suspense>
@@ -35,3 +39,4 @@ const Page = async () => {
 };
 
 export default Page;
+

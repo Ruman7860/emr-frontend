@@ -6,23 +6,29 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, User } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { startConsultation } from '@/app/actions/queue.actions';
+import { startConsultation, cancelVisit } from '@/app/actions/queue.actions';
 
 interface QueueClientProps {
   initialQueue: any[];
+  completedQueue: any[];
   accessToken: string;
 }
 
 export default function QueueClient({
   initialQueue,
+  completedQueue,
   accessToken,
 }: QueueClientProps) {
   const [queue, setQueue] = useState(initialQueue);
+  const [completed, setCompleted] = useState(completedQueue);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('active');
   const { socket } = useSocket();
   const router = useRouter();
   const { data: session } = useSession();
@@ -52,6 +58,33 @@ export default function QueueClient({
 
   const handleResumeConsultation = (patientId: string) => {
     router.push(`/consultation/${patientId}`);
+  };
+
+  const handleCancelVisit = async (patientId: string, visitId: string) => {
+    try {
+      setCancellingId(visitId);
+      const result = await cancelVisit({ patientId, visitId });
+
+      if (result.success) {
+        toast.success('Visit cancelled successfully');
+        // Move from active to completed
+        const cancelledItem = queue.find((q) => q.visitId === visitId);
+        if (cancelledItem) {
+          setQueue((prev) => prev.filter((q) => q.visitId !== visitId));
+          setCompleted((prev) => [{
+            ...cancelledItem,
+            visitStatus: 'CANCELLED',
+            patient: { ...cancelledItem.patient, visitStatus: 'CANCELLED' },
+          }, ...prev]);
+        }
+      } else {
+        toast.error(result.message || 'Failed to cancel visit');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'An error occurred');
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -92,21 +125,17 @@ export default function QueueClient({
     };
 
     const handleConsultationEnd = (payload: any) => {
-      // Update the queue item to completed status
-      setQueue((prev) =>
-        prev.map((q) =>
-          q.visitId === payload.visitId
-            ? {
-              ...q,
-              patient: {
-                ...q.patient,
-                visitStatus: 'COMPLETED'
-              },
-              consultationTime: payload.consultationTime
-            }
-            : q
-        )
-      );
+      // Move from active queue to completed
+      const completedItem = queue.find((q) => q.visitId === payload.visitId);
+      if (completedItem) {
+        setQueue((prev) => prev.filter((q) => q.visitId !== payload.visitId));
+        setCompleted((prev) => [{
+          ...completedItem,
+          visitStatus: 'COMPLETED',
+          patient: { ...completedItem.patient, visitStatus: 'COMPLETED' },
+          consultationTime: payload.consultationTime
+        }, ...prev]);
+      }
     };
 
     socket.on('QUEUE_REMOVE', handleQueueRemove);
@@ -120,7 +149,7 @@ export default function QueueClient({
       socket.off('QUEUE_UPDATE', handleQueueUpdate);
       socket.off('CONSULTATION_END', handleConsultationEnd);
     };
-  }, [socket, currentDoctorId]);
+  }, [socket, currentDoctorId, queue]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -142,6 +171,12 @@ export default function QueueClient({
             Completed
           </Badge>
         );
+      case 'CANCELLED':
+        return (
+          <Badge className="bg-red-500 text-white hover:bg-red-600">
+            Cancelled
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -149,9 +184,8 @@ export default function QueueClient({
 
   const waitingCount = queue.filter(q => q.patient.visitStatus === 'PAID_WAITING').length;
   const inConsultationCount = queue.filter(q => q.patient.visitStatus === 'IN_CONSULTATION').length;
-  const completedCount = queue.filter(q => q.patient.visitStatus === 'COMPLETED').length;
-
-  console.log("QUEUE_LOG", queue)
+  const completedCount = completed.filter(q => q.visitStatus === 'COMPLETED').length;
+  const cancelledCount = completed.filter(q => q.visitStatus === 'CANCELLED').length;
 
   return (
     <div className="container mx-auto p-6">
@@ -166,73 +200,171 @@ export default function QueueClient({
           <Badge className="px-3 py-1 bg-blue-500 text-white">
             {inConsultationCount} In Consultation
           </Badge>
-          <Badge className="px-3 py-1 bg-green-500 text-white">
-            {completedCount} Completed
-          </Badge>
         </div>
       </div>
 
-      {queue.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">
-          No patients in queue
-        </p>
-      ) : (
-        <div className="grid gap-4">
-          {queue.map((item, index) => {
-            const isInConsultation = item.patient.visitStatus === 'IN_CONSULTATION';
-            const isMyConsultation = isInConsultation && item.patient.doctorUserId === currentDoctorId;
-            const isLockedByOther = isInConsultation && item.patient.doctorUserId !== currentDoctorId;
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="active">
+            Active Queue ({queue.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            Completed/Cancelled ({completed.length})
+          </TabsTrigger>
+        </TabsList>
 
-            return (
-              <Card
-                key={item.visitId}
-                className={`hover:shadow-md transition ${isLockedByOther ? 'opacity-75' : ''}`}
-              >
-                <CardContent className="px-4 flex justify-between items-center">
-                  {/* Left */}
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-center gap-3">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <p className="font-semibold text-lg">
-                        {item.patient.fullName}
-                      </p>
-                      <Badge variant="outline">
-                        #{index + 1}
-                      </Badge>
-                      {getStatusBadge(item.patient.visitStatus)}
-                      {isLockedByOther && (
-                        <Badge variant="secondary" className="bg-gray-200 text-gray-700">
-                          🔒 Locked
-                        </Badge>
+        <TabsContent value="active">
+
+          {queue.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              No patients in queue
+            </p>
+          ) : (
+            <div className="grid gap-4">
+              {queue.map((item, index) => {
+                const isInConsultation = item.patient.visitStatus === 'IN_CONSULTATION';
+                const isMyConsultation = isInConsultation && item.patient.doctorUserId === currentDoctorId;
+                const isLockedByOther = isInConsultation && item.patient.doctorUserId !== currentDoctorId;
+
+                return (
+                  <Card
+                    key={item.visitId}
+                    className={`hover:shadow-md transition ${isLockedByOther ? 'opacity-75' : ''}`}
+                  >
+                    <CardContent className="px-4 flex justify-between items-center">
+                      {/* Left */}
+                      <div className="space-y-3 flex-1">
+                        <div className="flex items-center gap-3">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <p className="font-semibold text-lg">
+                            {item.patient.fullName}
+                          </p>
+                          <Badge variant="outline">
+                            #{index + 1}
+                          </Badge>
+                          {getStatusBadge(item.patient.visitStatus)}
+                          {isLockedByOther && (
+                            <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                              🔒 Locked
+                            </Badge>
+                          )}
+                        </div>
+
+                        <p className="text-sm text-muted-foreground">
+                          {item.patient.age} yrs • {item.patient.gender}
+                        </p>
+
+                        <p className="text-sm">
+                          <span className="font-medium">Complaint:</span>{' '}
+                          {item.chiefComplaint || '—'}
+                        </p>
+
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {item.patient.visitStatus === 'COMPLETED' ? (
+                            <span>
+                              Completed - Duration: {item.consultationTime ? formatDuration(item.consultationTime) : 'N/A'}
+                            </span>
+                          ) : isInConsultation ? (
+                            <span>In consultation {formatDistanceToNow(new Date(item.visitDate), { addSuffix: true })}</span>
+                          ) : (
+                            <span>Waiting {formatDistanceToNow(new Date(item.visitDate), { addSuffix: true })}</span>
+                          )}                 </div>
+                      </div>
+
+                      {/* Right - Action Buttons (Only for Doctors) */}
+                      {isDoctor && (
+                        <div className="flex gap-2">
+                          {item.patient.visitStatus === 'COMPLETED' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-sm"
+                              onClick={() => router.push(`/consultation/${item.patient.id}`)}
+                            >
+                              View Prescription
+                            </Button>
+                          ) : isMyConsultation ? (
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 cursor-pointer text-sm"
+                              onClick={() => handleResumeConsultation(item.patient.id)}
+                            >
+                              Resume Consultation
+                            </Button>
+                          ) : !isInConsultation ? (
+                            <>
+                              <Button
+                                size="sm"
+                                className="text-sm"
+                                onClick={() => handleStartConsultation(item.patient.id, item.visitId)}
+                                disabled={loadingId === item.visitId}
+                              >
+                                {loadingId === item.visitId ? 'Starting...' : 'Start Consultation'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleCancelVisit(item.patient.id, item.visitId)}
+                                disabled={cancellingId === item.visitId}
+                              >
+                                {cancellingId === item.visitId ? 'Cancelling...' : 'Cancel Visit'}
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
                       )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="completed">
+          {completed.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              No completed or cancelled visits today
+            </p>
+          ) : (
+            <div className="grid gap-4">
+              {completed.map((item, index) => (
+                <Card key={item.visitId} className="hover:shadow-md transition">
+                  <CardContent className="px-4 flex justify-between items-center">
+                    <div className="space-y-3 flex-1">
+                      <div className="flex items-center gap-3">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="font-semibold text-lg">
+                          {item.patient.fullName}
+                        </p>
+                        {getStatusBadge(item.visitStatus)}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground">
+                        {item.patient.age} yrs • {item.patient.gender}
+                      </p>
+
+                      <p className="text-sm">
+                        <span className="font-medium">Complaint:</span>{' '}
+                        {item.chiefComplaint || '—'}
+                      </p>
+
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {item.visitStatus === 'COMPLETED' ? (
+                          <span>
+                            Duration: {item.consultationTime ? formatDuration(item.consultationTime) : 'N/A'}
+                          </span>
+                        ) : (
+                          <span>Cancelled</span>
+                        )}
+                      </div>
                     </div>
 
-                    <p className="text-sm text-muted-foreground">
-                      {item.patient.age} yrs • {item.patient.gender}
-                    </p>
-
-                    <p className="text-sm">
-                      <span className="font-medium">Complaint:</span>{' '}
-                      {item.chiefComplaint || '—'}
-                    </p>
-
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {item.patient.visitStatus === 'COMPLETED' ? (
-                        <span>
-                          Completed - Duration: {item.consultationTime ? formatDuration(item.consultationTime) : 'N/A'}
-                        </span>
-                      ) : isInConsultation ? (
-                        <span>In consultation {formatDistanceToNow(new Date(item.visitDate), { addSuffix: true })}</span>
-                      ) : (
-                        <span>Waiting {formatDistanceToNow(new Date(item.visitDate), { addSuffix: true })}</span>
-                      )}                 </div>
-                  </div>
-
-                  {/* Right - Action Buttons (Only for Doctors) */}
-                  {isDoctor && (
-                    <div className="flex gap-2">
-                      {item.patient.visitStatus === 'COMPLETED' ? (
+                    {isDoctor && (
+                      <div className="flex gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -241,37 +373,15 @@ export default function QueueClient({
                         >
                           View Prescription
                         </Button>
-                      ) : isMyConsultation ? (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 cursor-pointer text-sm"
-                          onClick={() => handleResumeConsultation(item.patient.id)}
-                        >
-                          Resume Consultation
-                        </Button>
-                      ) : !isInConsultation ? (
-                        <>
-                          <Button
-                            size="sm"
-                            className="text-sm"
-                            onClick={() => handleStartConsultation(item.patient.id, item.visitId)}
-                            disabled={loadingId === item.visitId}
-                          >
-                            {loadingId === item.visitId ? 'Starting...' : 'Start Consultation'}
-                          </Button>
-                          <Button size="sm" variant="outline" className="text-sm">
-                            Skip
-                          </Button>
-                        </>
-                      ) : null}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

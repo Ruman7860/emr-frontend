@@ -233,6 +233,30 @@ async function collectPatientPayment(payload: {
     }
 }
 
+async function createRepeatVisit(patientId: string, data: {
+    chiefComplaint?: string;
+    registrationFee?: number;
+    doctorId?: string;
+}) {
+    try {
+        const { headers } = await getSessionAndHeaders();
+        const res = await fetch(`${API_BASE}/patients/${patientId}/repeat-visit`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+            throw new Error(`Failed to create repeat visit: ${res.status} ${res.statusText}`);
+        }
+        const result = await res.json();
+        revalidatePath('/patients');
+        revalidatePath(`/patients/${patientId}`);
+        return result;
+    } catch (error) {
+        throw new Error(`Error creating repeat visit: ${error}`);
+    }
+}
+
 
 export {
     getPatients,
@@ -242,5 +266,6 @@ export {
     updatePatient,
     deletePatient,
     restorePatient,
-    collectPatientPayment
+    collectPatientPayment,
+    createRepeatVisit
 }
