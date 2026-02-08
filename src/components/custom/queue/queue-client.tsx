@@ -351,15 +351,20 @@ export default function QueueClient({
                         {item.chiefComplaint || '—'}
                       </p>
 
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {item.visitStatus === 'COMPLETED' ? (
-                          <span>
-                            Duration: {item.consultationTime ? formatDuration(item.consultationTime) : 'N/A'}
-                          </span>
-                        ) : (
-                          <span>Cancelled</span>
-                        )}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {item.visitStatus === 'COMPLETED' ? (
+                            <span>
+                              Completed at {item.updatedAt ? format(new Date(item.updatedAt), 'dd MMM yyyy, h:mm a') : 'N/A'}
+                              {item.consultationTime ? ` • Duration: ${formatDuration(item.consultationTime)}` : ''}
+                            </span>
+                          ) : (
+                            <span>
+                              Cancelled at {item.updatedAt ? format(new Date(item.updatedAt), 'dd MMM yyyy, h:mm a') : 'N/A'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
