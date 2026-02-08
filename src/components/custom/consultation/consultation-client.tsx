@@ -474,6 +474,9 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
         }
     };
 
+    const isCancelled = patientData.header.visitStatus === 'CANCELLED';
+    const isCompleted = patientData.header.visitStatus === 'COMPLETED';
+
     return (
         <div className="space-y-6">
             {/* Patient Header */}
@@ -497,7 +500,7 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                             <p className="text-xs text-muted-foreground">Complaint entered 7 days end</p>
                         </div>
 
-                        {patientData.header.visitStatus !== 'COMPLETED' ? (
+                        {(patientData.header.visitStatus !== 'COMPLETED' && patientData.header.visitStatus !== 'CANCELLED') ? (
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center text-sm">
                                     <Clock className="h-4 w-4" />
@@ -513,7 +516,7 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                             </div>
                         ) : (
                             <div className="flex items-center gap-4">
-                                <Badge className='bg-green-700 text-white' variant="outline">Completed</Badge>
+                                <Badge className={` ${patientData.header.visitStatus === 'COMPLETED' ? 'bg-green-700 text-white' : 'bg-red-700 text-white'}`} variant="outline">{patientData.header.visitStatus}</Badge>
                                 <p className="text-sm">Consultation Duration: {formatTime(patientData.overview.todayVisit?.consultationTime || 0)}</p>
                             </div>
                         )}
@@ -545,8 +548,9 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                                             value={newMedication.drugName}
                                             onChange={(e) => setNewMedication({ ...newMedication, drugName: e.target.value })}
                                             className="flex-1"
+                                            disabled={isCancelled || isCompleted}
                                         />
-                                        <Select value={newMedication.dosage} onValueChange={(val) => setNewMedication({ ...newMedication, dosage: val })}>
+                                        <Select disabled={isCancelled || isCompleted} value={newMedication.dosage} onValueChange={(val) => setNewMedication({ ...newMedication, dosage: val })}>
                                             <SelectTrigger className="w-32">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -556,7 +560,7 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                                                 <SelectItem value="1 spoon">1 spoon</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Select value={newMedication.frequency} onValueChange={(val) => setNewMedication({ ...newMedication, frequency: val })}>
+                                        <Select disabled={isCancelled || isCompleted} value={newMedication.frequency} onValueChange={(val) => setNewMedication({ ...newMedication, frequency: val })}>
                                             <SelectTrigger className="w-40">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -566,7 +570,7 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                                                 <SelectItem value="3 times a day">3 times a day</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Select value={newMedication.timing} onValueChange={(val) => setNewMedication({ ...newMedication, timing: val })}>
+                                        <Select disabled={isCancelled || isCompleted} value={newMedication.timing} onValueChange={(val) => setNewMedication({ ...newMedication, timing: val })}>
                                             <SelectTrigger className="w-40">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -581,8 +585,9 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                                             value={newMedication.duration}
                                             onChange={(e) => setNewMedication({ ...newMedication, duration: e.target.value })}
                                             className="w-32"
+                                            disabled={isCancelled || isCompleted}
                                         />
-                                        <Button onClick={handleAddMedication} disabled={loadingPrescription}>
+                                        <Button size="sm" onClick={handleAddMedication} disabled={loadingPrescription || isCancelled || isCompleted}>
                                             {loadingPrescription ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
                                         </Button>
                                     </div>
@@ -594,6 +599,7 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                                         value={newMedication.instructions}
                                         onChange={(e) => setNewMedication({ ...newMedication, instructions: e.target.value })}
                                         className="min-h-20"
+                                        disabled={isCancelled || isCompleted}
                                     />
                                 </div>
                             </div>
@@ -672,8 +678,8 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold">Lab Tests</h3>
                                 {!showLabTestForm && (
-                                    <Button onClick={handleAddLabTest} size="sm">
-                                        <Plus className="h-4 w-4 mr-2" />
+                                    <Button size="sm" disabled={isCancelled || isCompleted} onClick={handleAddLabTest}>
+                                        <Plus className="h-3 w-3" />
                                         Add Lab Test
                                     </Button>
                                 )}
@@ -760,9 +766,10 @@ export default function ConsultationClient({ patientData }: ConsultationClientPr
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         className="min-h-32"
+                                        disabled={isCancelled || isCompleted}
                                     />
                                     <div className="flex justify-end">
-                                        <Button onClick={handleSaveNotes} disabled={loadingNotes}>
+                                        <Button onClick={handleSaveNotes} disabled={loadingNotes || isCancelled || isCompleted}>
                                             {loadingNotes ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                             Save Notes
                                         </Button>
