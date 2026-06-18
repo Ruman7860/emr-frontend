@@ -1,6 +1,5 @@
 import CredentialsProvider from 'next-auth/providers/credentials';
 import type { NextAuthOptions } from 'next-auth';
-import axios from 'axios';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,10 +15,24 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const { data } = await axios.post(`${process.env.BACKEND_URL}/auth/login`, {
-            email: credentials.email,
-            password: credentials.password,
+          const response = await fetch(`${process.env.BACKEND_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
           });
+          const data = await response.json();
+
+          if (!response.ok) {
+            console.error("Authorize error:", data);
+            return null;
+          }
+
+          console.log("DATA->",data);
 
           const user = data.data?.user;
           const accessToken = data.data?.access_token;
@@ -37,8 +50,11 @@ export const authOptions: NextAuthOptions = {
           }
 
           return null;
-        } catch (error: any) {
-          console.error("Authorize error:", error?.response?.data || error.message);
+        } catch (error: unknown) {
+          console.error(
+            "Authorize error:",
+            error instanceof Error ? error.message : error,
+          );
           return null;
         }
       },
