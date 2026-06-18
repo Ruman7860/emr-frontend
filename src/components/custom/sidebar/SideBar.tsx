@@ -26,19 +26,20 @@ export default function DashboardSideBar() {
     { href: '/doctors', label: 'Doctors', roles: ['ADMIN'] },
     { href: '/staffs', label: 'Staffs', roles: ['ADMIN'] },
     { href: '/patients', label: 'Patients', roles: ['ADMIN', 'DOCTOR','STAFF'] },
-    { href: '/queue', label: 'Queue', roles: ['ADMIN', 'DOCTOR','STAFF'] },
+    { href: '/queue', label: 'Queue', roles: ['DOCTOR','STAFF'] },
     // { href: '/inventory', label: 'Inventory', roles: ['ADMIN'] },
   ];
 
   return (
     <Sidebar className="h-full bg-blue-500 dark:bg-gray-900 shadow-lg">
       <SidebarHeader>
-        <div className="flex flex-col items-start gap-2 px-2 py-2">
-          <Avatar className="h-10 w-10 ">
+        <div className="flex flex-col items-start gap-2 px-2 py-1">
+          <Avatar className="h-11 w-10 ">
             <AvatarImage src="/logo.png" alt="Clinic Logo" />
             <AvatarFallback className='text-xs'>CMS</AvatarFallback>
           </Avatar>
         </div>
+        <hr className="border-gray-300 dark:border-gray-700" />
       </SidebarHeader>
 
       <SidebarContent>

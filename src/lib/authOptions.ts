@@ -32,8 +32,6 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          console.log("DATA->",data);
-
           const user = data.data?.user;
           const accessToken = data.data?.access_token;
           const tenant = data.data?.tenant;
